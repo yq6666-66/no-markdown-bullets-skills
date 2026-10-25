@@ -4,11 +4,14 @@
 from __future__ import annotations
 
 import argparse
+import json
 import re
 import sys
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Iterable, Optional, TextIO
+
+__version__ = "0.2.0"
 
 FENCE_RE = re.compile(r"^[ \t]*(`{3,}|~{3,})(?:[^`]*)$")
 UNORDERED_RE = re.compile(r"^([-+*])(?:[ \t]+|$)")
@@ -16,20 +19,51 @@ ORDERED_RE = re.compile(r"^\d{1,9}[.)](?:[ \t]+|$)")
 QUOTE_RE = re.compile(r"^[ \t]{0,3}>[ \t]?")
 IGNORED_DIRS = {".git", ".hg", ".svn", "node_modules", "__pycache__"}
 
+SUPPRESSION_OFF = "no-markdown-bullets: off"
+SUPPRESSION_ON = "no-markdown-bullets: on"
+SUPPRESSION_RE = re.compile(
+    r"^<!--\s*no-markdown-bullets:\s*(off|on)\b(.*?)-->\s*$"
+)
+SUPPRESSION_REASON_RE = re.compile(r"""reason\s*=\s*("[^"]*"|'[^']*')""")
+
+FRONTMATTER_FENCES = ("---", "+++")
+FRONTMATTER_MAX_LINES = 200
+
+CODE_UNORDERED = "unordered-list"
+CODE_UNCLOSED = "unclosed-suppression"
+
 
 @dataclass(frozen=True)
 class Finding:
     line: int
-    marker: str
+    message: str
+    code: str
 
     def format(self, source: str) -> str:
-        return f"{source}:{self.line}: Markdown unordered list marker '{self.marker}'"
+        return f"{source}:{self.line}: {self.message}"
 
 
 @dataclass(frozen=True)
 class Fence:
     character: str
     length: int
+
+
+@dataclass
+class ScanResult:
+    findings: list[Finding] = field(default_factory=list)
+    suppressed_lines: int = 0
+    suppression_blocks: int = 0
+
+    def as_dict(self) -> dict:
+        return {
+            "findings": [
+                {"line": finding.line, "code": finding.code, "message": finding.message}
+                for finding in self.findings
+            ],
+            "suppressed_lines": self.suppressed_lines,
+            "suppression_blocks": self.suppression_blocks,
+        }
 
 
 def _container(line: str) -> tuple[int, str]:
@@ -83,17 +117,55 @@ def _is_closing_fence(rest: str, fence: Fence) -> bool:
     )
 
 
-def scan_text(text: str) -> list[Finding]:
-    """Find actual list syntax while ignoring code and thematic breaks.
+def _frontmatter_end(lines: list[str]) -> int:
+    """Return the 1-based last line of a closed frontmatter block, else 0.
 
-    This intentionally implements only the Markdown structure needed for this
-    check. It does not rewrite content or perform general Markdown linting.
+    The check stays deliberately conservative: the opening line must be a bare
+    ``---`` or ``+++``, the block may not contain a blank line, and a closing
+    line of the same form must appear within ``FRONTMATTER_MAX_LINES``. Anything
+    ambiguous is treated as ordinary Markdown so that body text is never
+    swallowed.
     """
-    findings: list[Finding] = []
+    if not lines:
+        return 0
+    opening = lines[0].rstrip()
+    if opening not in FRONTMATTER_FENCES:
+        return 0
+    limit = min(len(lines), FRONTMATTER_MAX_LINES + 1)
+    for index in range(1, limit):
+        line = lines[index].rstrip()
+        if not line:
+            return 0
+        if line == opening:
+            return index + 1
+    return 0
+
+
+def _suppression_command(content: str) -> Optional[tuple[str, bool]]:
+    """Return (action, has_reason) for a well-formed suppression comment."""
+    match = SUPPRESSION_RE.match(content)
+    if not match:
+        return None
+    action = match.group(1)
+    reason = SUPPRESSION_REASON_RE.search(match.group(2) or "")
+    has_reason = bool(reason and reason.group(1)[1:-1].strip())
+    return action, has_reason
+
+
+def scan_document(text: str) -> ScanResult:
+    """Scan text and report unordered lists plus suppression bookkeeping."""
+    lines = text.splitlines()
+    result = ScanResult()
+    skip_until = _frontmatter_end(lines)
+
     fences: dict[int, Fence] = {}
     list_indents: dict[int, list[int]] = {}
+    suppression_start = 0
 
-    for line_number, raw_line in enumerate(text.splitlines(), start=1):
+    for line_number, raw_line in enumerate(lines, start=1):
+        if line_number <= skip_until:
+            continue
+
         depth, rest = _container(raw_line)
 
         if fences:
@@ -122,6 +194,22 @@ def scan_text(text: str) -> list[Finding]:
         if not content:
             continue
 
+        command = _suppression_command(content)
+        if command:
+            action, has_reason = command
+            if action == "off" and has_reason and not suppression_start:
+                suppression_start = line_number
+                result.suppression_blocks += 1
+            elif action == "on" and suppression_start:
+                suppression_start = 0
+            # Without a reason the directive is ignored; the region keeps being
+            # checked, which surfaces the exception instead of hiding it.
+            continue
+
+        if suppression_start:
+            result.suppressed_lines += 1
+            continue
+
         unordered = UNORDERED_RE.match(content)
         ordered = ORDERED_RE.match(content)
 
@@ -134,7 +222,13 @@ def scan_text(text: str) -> list[Finding]:
             if _is_thematic_break(content, marker):
                 active_lists.clear()
                 continue
-            findings.append(Finding(line_number, marker))
+            result.findings.append(
+                Finding(
+                    line_number,
+                    f"Markdown unordered list marker '{marker}'",
+                    CODE_UNORDERED,
+                )
+            )
         elif not ordered:
             if active_lists and indent > active_lists[-1]:
                 continue
@@ -147,7 +241,22 @@ def scan_text(text: str) -> list[Finding]:
             continue
         active_lists.append(indent)
 
-    return findings
+    if suppression_start:
+        result.findings.append(
+            Finding(
+                suppression_start,
+                "Unclosed suppression block, expected "
+                f"'<!-- {SUPPRESSION_ON} reason=\"...\" -->'",
+                CODE_UNCLOSED,
+            )
+        )
+
+    return result
+
+
+def scan_text(text: str) -> list[Finding]:
+    """Return findings only, kept for callers that do not need statistics."""
+    return scan_document(text).findings
 
 
 def _markdown_files(path: Path) -> Iterable[Path]:
@@ -172,13 +281,26 @@ def run(
     paths: Iterable[str],
     *,
     allow: bool = False,
+    output_format: str = "text",
     stdin: TextIO = sys.stdin,
     stdout: TextIO = sys.stdout,
     stderr: TextIO = sys.stderr,
 ) -> int:
-    found = False
+    values = list(paths)
+    if allow and len(values) > 1:
+        print(
+            "--allow accepts a single path; use inline suppression for "
+            "per-file exceptions",
+            file=stderr,
+        )
+        return 2
+
     failed = False
-    for value in paths:
+    total_findings = 0
+    total_suppressed = 0
+    records: list[dict] = []
+
+    for value in values:
         path = Path(value)
         if value != "-" and not path.exists():
             print(f"{value}: path does not exist", file=stderr)
@@ -197,14 +319,45 @@ def run(
                 failed = True
                 continue
             source = "<stdin>" if value == "-" else str(candidate)
-            for finding in scan_text(text):
-                found = True
-                print(finding.format(source), file=stdout)
+            result = scan_document(text)
+            found = len(result.findings)
+            total_findings += found
+            total_suppressed += result.suppressed_lines
+            if output_format == "json":
+                records.append(
+                    {"path": source, **result.as_dict()}
+                )
+            else:
+                for finding in result.findings:
+                    print(finding.format(source), file=stdout)
+
+    if output_format == "json":
+        payload = {
+            "tool": "check_markdown_bullets",
+            "version": __version__,
+            "files": records,
+            "summary": {
+                "files": len(records),
+                "findings": total_findings,
+                "suppressed_lines": total_suppressed,
+                "suppression_ratio": _ratio(total_suppressed, total_findings),
+            },
+        }
+        json.dump(payload, stdout, ensure_ascii=False, indent=2)
+        print("", file=stdout)
+
     if failed:
         return 2
-    if found and not allow:
+    if total_findings and not allow:
         return 1
     return 0
+
+
+def _ratio(suppressed: int, findings: int) -> float:
+    total = suppressed + findings
+    if not total:
+        return 0.0
+    return round(suppressed / total, 4)
 
 
 def main(argv: Optional[list[str]] = None) -> int:
@@ -220,10 +373,26 @@ def main(argv: Optional[list[str]] = None) -> int:
     parser.add_argument(
         "--allow",
         action="store_true",
-        help="report findings but return success for an explicit per-output override",
+        help="report findings but return success; single path only",
+    )
+    parser.add_argument(
+        "--format",
+        choices=("text", "json"),
+        default="text",
+        dest="output_format",
+        help="output format (default: text)",
+    )
+    parser.add_argument(
+        "--version",
+        action="version",
+        version=f"%(prog)s {__version__}",
     )
     args = parser.parse_args(argv)
-    return run(args.paths, allow=args.allow)
+    return run(
+        args.paths,
+        allow=args.allow,
+        output_format=args.output_format,
+    )
 
 
 if __name__ == "__main__":

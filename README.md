@@ -13,8 +13,10 @@ no-markdown-bullets/
   scripts/check_markdown_bullets.py
   examples/good.md
   examples/bad.md                # 故意违规，供负例验证
+  examples/suppression.md        # 作用域抑制的端到端示例
 tests/test_check_markdown_bullets.py
-docs/design.md                   # 根因、竞品结论与取舍
+docs/design.md                   # 根因、方案取舍与判定边界
+CHANGELOG.md
 .github/workflows/validate.yml
 ```
 
@@ -56,7 +58,39 @@ docs/design.md                   # 根因、竞品结论与取舍
     - 缩进代码示例
 ```
 
-用户对某次输出的明确要求可以覆写默认约定，但例外不自动延续到其他内容。`--allow` 用于这种已知例外：仍报告命中，只把违规退出码改为成功。
+闭合的 YAML 或 TOML frontmatter 内部整段跳过，因此 `tags:` 下的缩进条目不会被误报。未闭合的 frontmatter 不启用跳过，仍按正文检查，避免吞掉正文造成漏报。
+
+## 检测边界
+
+检测只覆盖 Markdown 文本层。以下形态不在检测范围，不要因为返回 `0` 就认为没有问题来源：
+
+| 形态 | 是否检测 | 说明 |
+| --- | --- | --- |
+| 行首 `-`、`*`、`+`，含任务列表、嵌套、引用块内 | 检测 | 核心目标 |
+| 闭合的 `---` 或 `+++` frontmatter 内部 | 跳过 | 配置数据不是正文 |
+| raw HTML `<ul>`、`<li>` | 不检测 | 需要 HTML 解析，超出单文件脚本职责 |
+| 粘贴产生的 `•`、`·`、`◦` | 不检测 | 字形不是 Markdown 语法 |
+| `.mdx`、`.markdown` | 不扫描 | 仅处理 `.md` |
+
+## 例外治理
+
+用户对某次输出的明确要求可以覆写默认约定，但例外不自动延续到其他内容。单个文件整体放行使用 `--allow`，它只接受一个路径：
+
+```bash
+python scripts/check_markdown_bullets.py --allow approved-exception.md
+```
+
+传入多个路径并带 `--allow` 会以退出码 `2` 报错，因为多文件放行等于关掉检查。
+
+文件内部需要局部例外时，用成对的行内指令并写明理由：
+
+```markdown
+<!-- no-markdown-bullets: off reason="兼容旧版模板，2026Q4 移除" -->
+- 这一行被豁免
+<!-- no-markdown-bullets: on reason="恢复检查" -->
+```
+
+缺少 `reason` 或理由为空时指令不生效，区域照常检查。未闭合的 `off` 会作为违规报到该行。写在代码块内的指令无效，因此示例不会被自身豁免。豁免行数计入统计，便于发现例外堆积。
 
 ## 校验
 
@@ -73,11 +107,15 @@ python scripts/check_markdown_bullets.py /path/to/docs
 python scripts/check_markdown_bullets.py - < draft.md
 ```
 
-输出格式为 `路径:行号: 说明`。退出码 `0` 表示通过，`1` 表示发现无序列表，`2` 表示路径或读取错误。明确覆写时使用：
+输出格式为 `路径:行号: 说明`。退出码 `0` 表示通过，`1` 表示发现无序列表，`2` 表示路径、读取错误或参数冲突。
+
+供 CI 消费时改为 JSON：
 
 ```bash
-python scripts/check_markdown_bullets.py --allow approved-exception.md
+python scripts/check_markdown_bullets.py --format json /path/to/docs
 ```
+
+顶层字段为 `tool`、`version`、`files`、`summary`。`summary` 给出 `files`、`findings`、`suppressed_lines`、`suppression_ratio`；每个文件的 `findings` 项含 `line`、`code`、`message`，`code` 当前为 `unordered-list` 或 `unclosed-suppression`。退出码语义不随输出格式变化，`text` 格式保持不变。
 
 脚本只读，不自动改写。自动替换无法可靠地区分步骤、对比和叙述，因此修复应依据 `references/scenarios.md` 选择语义结构。
 
@@ -88,11 +126,14 @@ python scripts/check_markdown_bullets.py --allow approved-exception.md
 ```bash
 python -m unittest discover -s tests -v
 python no-markdown-bullets/scripts/check_markdown_bullets.py no-markdown-bullets/examples/good.md
+python no-markdown-bullets/scripts/check_markdown_bullets.py no-markdown-bullets/examples/suppression.md
 python no-markdown-bullets/scripts/check_markdown_bullets.py no-markdown-bullets/examples/bad.md
 ```
 
-最后一条应返回退出码 `1`，因为 `bad.md` 是故意保留的违规样本。
+前三条返回退出码 `0`，最后一条应返回 `1`，因为 `bad.md` 是故意保留的违规样本。测试套件同时校验仓库自身文档符合本规则，避免文档与实现漂移。
 
 ## 范围
 
 此项目只约束 Markdown 无序列表。它不禁用编号列表或表格，不修改语言风格，不检查事实，不替代文档排版工具，也不保证所有聊天客户端都支持表格。
+
+本仓库对自身 Skill 包负责，不含与外部插件、其他 Agent 生态的组合约定，也不提供安装到特定平台之外的适配。

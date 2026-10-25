@@ -1,5 +1,6 @@
 import importlib.util
 import io
+import json
 import sys
 import tempfile
 import unittest
@@ -76,6 +77,64 @@ class ScanTextTests(unittest.TestCase):
         text = "> ```markdown\n> - code\n\n- real\n"
         self.assertEqual(self.lines(text), [4])
 
+    def test_closed_frontmatter_is_skipped(self):
+        text = "---\ntitle: doc\ntags:\n  - alpha\n  - beta\n---\n\n- real\n"
+        self.assertEqual(self.lines(text), [8])
+
+    def test_toml_frontmatter_is_skipped(self):
+        text = "+++\ntags = [\"a\"]\n+++\n\n- real\n"
+        self.assertEqual(self.lines(text), [5])
+
+    def test_unclosed_frontmatter_still_reports(self):
+        text = "---\ntags:\n  - alpha\n\n- real\n"
+        self.assertEqual(self.lines(text), [3, 5])
+
+    def test_frontmatter_with_blank_line_is_not_skipped(self):
+        text = "---\ntitle: doc\n\n- body\n---\n"
+        self.assertEqual(self.lines(text), [4])
+
+    def test_thematic_break_is_not_frontmatter(self):
+        text = "---\n\nparagraph\n\n---\n\n- real\n"
+        self.assertEqual(self.lines(text), [7])
+
+    def test_suppression_region_hides_findings(self):
+        text = (
+            "<!-- no-markdown-bullets: off reason=\"legacy template\" -->\n"
+            "- hidden\n"
+            "<!-- no-markdown-bullets: on reason=\"resume\" -->\n"
+            "- visible\n"
+        )
+        self.assertEqual(self.lines(text), [4])
+
+    def test_suppression_requires_reason(self):
+        text = "<!-- no-markdown-bullets: off -->\n- still checked\n"
+        self.assertEqual(self.lines(text), [2])
+
+    def test_empty_reason_is_rejected(self):
+        text = "<!-- no-markdown-bullets: off reason=\"   \" -->\n- checked\n"
+        self.assertEqual(self.lines(text), [2])
+
+    def test_unclosed_suppression_is_reported(self):
+        text = "<!-- no-markdown-bullets: off reason=\"x\" -->\n- hidden\n"
+        findings = CHECKER.scan_text(text)
+        self.assertEqual([(f.line, f.code) for f in findings], [(1, "unclosed-suppression")])
+
+    def test_suppression_inside_code_block_is_inert(self):
+        text = "```markdown\n<!-- no-markdown-bullets: off reason=\"x\" -->\n```\n- real\n"
+        self.assertEqual(self.lines(text), [4])
+
+    def test_suppression_counts_and_blocks(self):
+        text = (
+            "<!-- no-markdown-bullets: off reason=\"a\" -->\n"
+            "- hidden\n"
+            "text\n"
+            "<!-- no-markdown-bullets: on reason=\"b\" -->\n"
+        )
+        result = CHECKER.scan_document(text)
+        self.assertEqual(result.suppression_blocks, 1)
+        self.assertEqual(result.suppressed_lines, 2)
+        self.assertEqual(result.findings, [])
+
 
 class CommandTests(unittest.TestCase):
     def test_good_bad_and_override_exit_codes(self):
@@ -94,12 +153,80 @@ class CommandTests(unittest.TestCase):
                 CHECKER.run([str(bad)], allow=True, stdout=io.StringIO()), 0
             )
 
+    def test_allow_rejects_multiple_paths(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            first = root / "a.md"
+            second = root / "b.md"
+            first.write_text("- a\n", encoding="utf-8")
+            second.write_text("- b\n", encoding="utf-8")
+            stderr = io.StringIO()
+            status = CHECKER.run(
+                [str(first), str(second)],
+                allow=True,
+                stdout=io.StringIO(),
+                stderr=stderr,
+            )
+            self.assertEqual(status, 2)
+            self.assertIn("--allow accepts a single path", stderr.getvalue())
+
+    def test_text_output_is_unchanged(self):
+        with tempfile.TemporaryDirectory() as directory:
+            bad = Path(directory) / "x.md"
+            bad.write_text("- one\n", encoding="utf-8")
+            output = io.StringIO()
+            CHECKER.run([str(bad)], stdout=output)
+            self.assertEqual(
+                output.getvalue(),
+                f"{bad}:1: Markdown unordered list marker '-'\n",
+            )
+
+    def test_json_output_shape(self):
+        with tempfile.TemporaryDirectory() as directory:
+            bad = Path(directory) / "x.md"
+            bad.write_text(
+                "<!-- no-markdown-bullets: off reason=\"r\" -->\n"
+                "hidden\n"
+                "<!-- no-markdown-bullets: on reason=\"r\" -->\n"
+                "* hit\n",
+                encoding="utf-8",
+            )
+            output = io.StringIO()
+            status = CHECKER.run(
+                [str(bad)], output_format="json", stdout=output
+            )
+            self.assertEqual(status, 1)
+            payload = json.loads(output.getvalue())
+            self.assertEqual(payload["version"], CHECKER.__version__)
+            self.assertEqual(payload["summary"]["findings"], 1)
+            self.assertEqual(payload["summary"]["suppressed_lines"], 1)
+            self.assertEqual(len(payload["files"]), 1)
+            finding = payload["files"][0]["findings"][0]
+            self.assertEqual(finding["code"], "unordered-list")
+            self.assertEqual(finding["line"], 4)
+
+    def test_json_output_passes_when_clean(self):
+        with tempfile.TemporaryDirectory() as directory:
+            good = Path(directory) / "g.md"
+            good.write_text("1. ok\n", encoding="utf-8")
+            output = io.StringIO()
+            status = CHECKER.run([str(good)], output_format="json", stdout=output)
+            self.assertEqual(status, 0)
+            payload = json.loads(output.getvalue())
+            self.assertEqual(payload["summary"], {
+                "files": 1,
+                "findings": 0,
+                "suppressed_lines": 0,
+                "suppression_ratio": 0.0,
+            })
+
     def test_directory_only_reads_markdown(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             (root / "note.txt").write_text("- text\n", encoding="utf-8")
             (root / "note.md").write_text("1. markdown\n", encoding="utf-8")
             self.assertEqual(CHECKER.run([str(root)], stdout=io.StringIO()), 0)
+
 
     def test_stdin(self):
         output = io.StringIO()
@@ -114,6 +241,61 @@ class CommandTests(unittest.TestCase):
             ),
             2,
         )
+
+
+REPO_ROOT = Path(__file__).resolve().parents[1]
+SKILL_DIR = REPO_ROOT / "no-markdown-bullets"
+
+
+class RepositoryConsistencyTests(unittest.TestCase):
+    """Keep the shipped docs compliant with the rule they describe."""
+
+    def test_repository_docs_pass_their_own_check(self):
+        targets = [
+            REPO_ROOT / "README.md",
+            REPO_ROOT / "CHANGELOG.md",
+            REPO_ROOT / "docs" / "design.md",
+            SKILL_DIR / "SKILL.md",
+            SKILL_DIR / "references" / "scenarios.md",
+        ]
+        for target in targets:
+            with self.subTest(target=target.name):
+                output = io.StringIO()
+                self.assertEqual(
+                    CHECKER.run([str(target)], stdout=output),
+                    0,
+                    output.getvalue(),
+                )
+
+    def test_good_example_passes(self):
+        self.assertEqual(
+            CHECKER.run([str(SKILL_DIR / "examples" / "good.md")], stdout=io.StringIO()),
+            0,
+        )
+
+    def test_bad_example_reports_six_findings(self):
+        output = io.StringIO()
+        self.assertEqual(
+            CHECKER.run([str(SKILL_DIR / "examples" / "bad.md")], stdout=output), 1
+        )
+        self.assertEqual(len(output.getvalue().strip().splitlines()), 6)
+
+    def test_suppression_example_passes_end_to_end(self):
+        target = SKILL_DIR / "examples" / "suppression.md"
+        output = io.StringIO()
+        self.assertEqual(CHECKER.run([str(target)], stdout=output), 0, output.getvalue())
+        result = CHECKER.scan_document(target.read_text(encoding="utf-8-sig"))
+        self.assertEqual(result.suppression_blocks, 1)
+        self.assertEqual(result.suppressed_lines, 2)
+
+    def test_skill_frontmatter_names_the_skill(self):
+        text = (SKILL_DIR / "SKILL.md").read_text(encoding="utf-8-sig")
+        self.assertTrue(text.startswith("---\nname: no-markdown-bullets\n"))
+
+    def test_documented_suppression_markers_match_the_implementation(self):
+        text = (SKILL_DIR / "SKILL.md").read_text(encoding="utf-8-sig")
+        self.assertIn(CHECKER.SUPPRESSION_OFF, text)
+        self.assertIn(CHECKER.SUPPRESSION_ON, text)
 
 
 if __name__ == "__main__":

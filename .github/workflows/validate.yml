@@ -19,6 +19,11 @@ jobs:
         run: python -m unittest discover -s tests -v
       - name: Check valid example
         run: python no-markdown-bullets/scripts/check_markdown_bullets.py no-markdown-bullets/examples/good.md
+      - name: Check shipped docs pass their own rule
+        run: |
+          python no-markdown-bullets/scripts/check_markdown_bullets.py \
+            README.md CHANGELOG.md docs/design.md \
+            no-markdown-bullets/SKILL.md no-markdown-bullets/references/scenarios.md
       - name: Check invalid example is rejected
         shell: bash
         run: |
@@ -26,3 +31,14 @@ jobs:
             echo "bad.md was expected to fail validation"
             exit 1
           fi
+      - name: Check JSON report is parseable
+        shell: bash
+        run: |
+          set +e
+          python no-markdown-bullets/scripts/check_markdown_bullets.py --format json \
+            no-markdown-bullets/examples/bad.md > report.json
+          status=$?
+          set -e
+          test "$status" -eq 1
+          python -c "import json;d=json.load(open('report.json'));assert d['summary']['findings']==6,d['summary'];assert d['files'][0]['findings'][0]['code']=='unordered-list'"
+
