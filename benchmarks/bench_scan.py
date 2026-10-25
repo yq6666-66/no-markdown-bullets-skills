@@ -22,12 +22,14 @@ import importlib.util
 import statistics
 import sys
 import time
+from collections.abc import Callable
 from pathlib import Path
 from types import ModuleType
-from typing import Callable
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
-DEFAULT_TARGET = REPO_ROOT / "no-markdown-bullets" / "scripts" / "check_markdown_bullets.py"
+DEFAULT_TARGET = (
+    REPO_ROOT / "no-markdown-bullets" / "scripts" / "check_markdown_bullets.py"
+)
 
 SECTION = """## Section {index}
 
@@ -111,7 +113,10 @@ def main(argv: list[str] | None = None) -> int:
 
     text = build_document(args.sections)
     size_mb = len(text.encode("utf-8")) / (1024 * 1024)
-    print(f"document: {args.sections} sections, {size_mb * 1024:.0f} KiB, {args.rounds} rounds")
+    print(
+        f"document: {args.sections} sections, "
+        f"{size_mb * 1024:.0f} KiB, {args.rounds} rounds"
+    )
 
     target = load_checker(args.target)
     if args.baseline is None:
@@ -128,9 +133,18 @@ def main(argv: list[str] | None = None) -> int:
     base_median = statistics.median(base_times)
     target_median = statistics.median(target_times)
 
-    print(f"baseline: {base_best * 1000:8.2f} ms best  {base_median * 1000:8.2f} ms median")
-    print(f"target:   {target_best * 1000:8.2f} ms best  {target_median * 1000:8.2f} ms median")
-    print(f"throughput: {size_mb / base_best:7.2f} -> {size_mb / target_best:7.2f} MB/s")
+    print(
+        f"baseline: {base_best * 1000:8.2f} ms best  "
+        f"{base_median * 1000:8.2f} ms median"
+    )
+    print(
+        f"target:   {target_best * 1000:8.2f} ms best  "
+        f"{target_median * 1000:8.2f} ms median"
+    )
+    print(
+        f"throughput: {size_mb / base_best:7.2f} -> "
+        f"{size_mb / target_best:7.2f} MB/s"
+    )
     delta_best = (target_best - base_best) / base_best * 100
     delta_median = (target_median - base_median) / base_median * 100
     print(f"delta: {delta_best:+.2f}% (best)  {delta_median:+.2f}% (median)")

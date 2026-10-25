@@ -6,7 +6,6 @@ import tempfile
 import unittest
 from pathlib import Path
 
-
 SCRIPT = (
     Path(__file__).resolve().parents[1]
     / "no-markdown-bullets"
@@ -117,10 +116,17 @@ class ScanTextTests(unittest.TestCase):
     def test_unclosed_suppression_is_reported(self):
         text = "<!-- no-markdown-bullets: off reason=\"x\" -->\n- hidden\n"
         findings = CHECKER.scan_text(text)
-        self.assertEqual([(f.line, f.code) for f in findings], [(1, "unclosed-suppression")])
+        self.assertEqual(
+            [(f.line, f.code) for f in findings], [(1, "unclosed-suppression")]
+        )
 
     def test_suppression_inside_code_block_is_inert(self):
-        text = "```markdown\n<!-- no-markdown-bullets: off reason=\"x\" -->\n```\n- real\n"
+        text = (
+            "```markdown\n"
+            "<!-- no-markdown-bullets: off reason=\"x\" -->\n"
+            "```\n"
+            "- real\n"
+        )
         self.assertEqual(self.lines(text), [4])
 
     def test_suppression_counts_and_blocks(self):
@@ -359,10 +365,8 @@ class RepositoryConsistencyTests(unittest.TestCase):
                 )
 
     def test_good_example_passes(self):
-        self.assertEqual(
-            CHECKER.run([str(SKILL_DIR / "examples" / "good.md")], stdout=io.StringIO()),
-            0,
-        )
+        target = SKILL_DIR / "examples" / "good.md"
+        self.assertEqual(CHECKER.run([str(target)], stdout=io.StringIO()), 0)
 
     def test_bad_example_reports_six_findings(self):
         output = io.StringIO()
@@ -374,7 +378,8 @@ class RepositoryConsistencyTests(unittest.TestCase):
     def test_suppression_example_passes_end_to_end(self):
         target = SKILL_DIR / "examples" / "suppression.md"
         output = io.StringIO()
-        self.assertEqual(CHECKER.run([str(target)], stdout=output), 0, output.getvalue())
+        status = CHECKER.run([str(target)], stdout=output)
+        self.assertEqual(status, 0, output.getvalue())
         result = CHECKER.scan_document(target.read_text(encoding="utf-8-sig"))
         self.assertEqual(result.suppression_blocks, 1)
         self.assertEqual(result.suppressed_lines, 2)

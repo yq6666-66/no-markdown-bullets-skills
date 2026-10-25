@@ -21,7 +21,9 @@ from pathlib import Path
 from types import ModuleType
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
-DEFAULT_TARGET = REPO_ROOT / "no-markdown-bullets" / "scripts" / "check_markdown_bullets.py"
+DEFAULT_TARGET = (
+    REPO_ROOT / "no-markdown-bullets" / "scripts" / "check_markdown_bullets.py"
+)
 
 
 def load_checker(path: Path) -> ModuleType:
@@ -100,7 +102,10 @@ def main(argv: list[str] | None = None) -> int:
         baseline = load_checker(args.baseline)
         baseline_files = enumerate_files(baseline, root)
         baseline_time = time_walk(baseline, root, args.runs)
-        print(f"baseline: {len(baseline_files):5d} files  {baseline_time * 1000:7.2f} ms")
+        print(
+            f"baseline: {len(baseline_files):5d} files  "
+            f"{baseline_time * 1000:7.2f} ms"
+        )
 
         if baseline_files != target_files:
             # Only two outcomes are acceptable: the target enumerates the same

@@ -12,9 +12,10 @@ import json
 import os
 import re
 import sys
+from collections.abc import Iterable, Iterator, Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Iterable, Iterator, NamedTuple, Optional, Sequence, TextIO
+from typing import NamedTuple, TextIO
 
 __all__ = [
     "Finding",
@@ -97,7 +98,7 @@ class ScanResult:
     suppressed_lines: int = 0
     suppression_blocks: int = 0
 
-    def as_dict(self) -> dict:
+    def as_dict(self) -> dict[str, object]:
         return {
             "findings": [
                 {"line": finding.line, "code": finding.code, "message": finding.message}
@@ -128,7 +129,7 @@ class _Totals:
         return round(self.suppressed / total, 4) if total else 0.0
 
 
-def _split_quote_prefix(line: str, limit: Optional[int] = None) -> tuple[int, str]:
+def _split_quote_prefix(line: str, limit: int | None = None) -> tuple[int, str]:
     """Strip up to ``limit`` blockquote markers and return (depth, remainder)."""
     if ">" not in line:
         # Overwhelmingly the common case; avoids a regex attempt per line.
@@ -168,7 +169,7 @@ def _is_thematic_break(content: str, marker: str) -> bool:
     return count >= 3
 
 
-def _opening_fence(rest: str, indent: int, has_active_list: bool) -> Optional[Fence]:
+def _opening_fence(rest: str, indent: int, has_active_list: bool) -> Fence | None:
     """Return a fence if this line opens a fenced code block."""
     if indent > 3 and not has_active_list:
         return None
@@ -211,7 +212,7 @@ def _frontmatter_last_line(lines: Sequence[str]) -> int:
     return 0
 
 
-def _parse_suppression_directive(content: str) -> Optional[_Directive]:
+def _parse_suppression_directive(content: str) -> _Directive | None:
     """Parse a suppression comment, ignoring anything malformed."""
     if not content.startswith("<!--"):
         # Called for every content line, so reject non-comments immediately.
@@ -237,7 +238,7 @@ class _BlockScanner:
         self.result = ScanResult()
         self._fences: dict[int, Fence] = {}
         self._list_indents: dict[int, list[int]] = {}
-        self._suppression_line: Optional[int] = None
+        self._suppression_line: int | None = None
 
     def scan(self, text: str) -> ScanResult:
         lines = text.splitlines()
@@ -345,9 +346,8 @@ class _BlockScanner:
             if self._suppression_line is None:
                 self._suppression_line = number
                 self.result.suppression_blocks += 1
-        elif directive.action == "on":
-            if self._suppression_line is not None:
-                self._suppression_line = None
+        elif directive.action == "on" and self._suppression_line is not None:
+            self._suppression_line = None
         # A directive without a reason is ignored on purpose: the region keeps
         # being checked, which surfaces the exception instead of hiding it.
         return True
@@ -463,7 +463,7 @@ def _write_findings(stdout: TextIO, source: str, result: ScanResult) -> None:
 
 
 def _write_json(
-    stdout: TextIO, records: Sequence[dict], totals: _Totals
+    stdout: TextIO, records: Sequence[dict[str, object]], totals: _Totals
 ) -> None:
     payload = {
         "tool": "check_markdown_bullets",
@@ -500,7 +500,7 @@ def run(
         return EXIT_ERROR
 
     problems: list[str] = []
-    records: list[dict] = []
+    records: list[dict[str, object]] = []
     totals = _Totals()
 
     for value in values:
@@ -526,7 +526,7 @@ def run(
     return EXIT_OK
 
 
-def main(argv: Optional[list[str]] = None) -> int:
+def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         prog="check_markdown_bullets",
         description="Report Markdown unordered lists; never modify the input.",

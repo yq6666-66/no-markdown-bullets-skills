@@ -22,7 +22,7 @@ CHANGELOG.md
 
 ## 安装与迁移
 
-整个 `no-markdown-bullets` 目录就是独立 Skill 包，不依赖本仓库的其他文件。将它复制到目标工具读取的 Skills 目录即可；包内只使用相对路径，校验器仅依赖 Python 3.9+ 标准库。
+整个 `no-markdown-bullets` 目录就是独立 Skill 包，不依赖本仓库的其他文件。将它复制到目标工具读取的 Skills 目录即可；包内只使用相对路径，校验器仅依赖 Python 3.10+ 标准库。
 
 以 WorkBuddy 为例，单个项目可复制到 `<项目>/.workbuddy/skills/no-markdown-bullets`，跨项目复用可复制到 `~/.workbuddy/skills/no-markdown-bullets`。其他支持 `SKILL.md` 的 Agent 工具也可按各自的 Skills 目录约定放置。
 
@@ -131,6 +131,17 @@ python no-markdown-bullets/scripts/check_markdown_bullets.py no-markdown-bullets
 ```
 
 前三条返回退出码 `0`，最后一条应返回 `1`，因为 `bad.md` 是故意保留的违规样本。测试套件同时校验仓库自身文档符合本规则，避免文档与实现漂移。
+
+静态检查与性能基准：
+
+```bash
+python -m ruff check .
+python -m mypy
+python benchmarks/bench_scan.py --baseline <old-checker.py>
+python benchmarks/bench_walk.py  --baseline <old-checker.py>
+```
+
+两个基准都接受 `--baseline` 参数以对比历史版本。扫描基准交错测量两次实现，避免首次运行更凉快带来的系统性偏差；遍历基准在文件集与基线不一致时直接失败，只有落在 `IGNORED_DIRS` 内的差异才算合理。
 
 ## 范围
 

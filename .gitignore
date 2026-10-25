@@ -3,3 +3,7 @@ __pycache__/
 .DS_Store
 Thumbs.db
 .workbuddy/
+.tmp-verify/
+.mypy_cache/
+.ruff_cache/
+report.json

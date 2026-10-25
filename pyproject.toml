@@ -1,0 +1,15 @@
+[tool.ruff]
+line-length = 88
+target-version = "py39"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B", "SIM", "RET", "ARG", "PTH", "C4", "PERF"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["ARG"]
+"benchmarks/*" = ["ARG"]
+
+[tool.mypy]
+python_version = "3.10"
+strict = true
+files = ["no-markdown-bullets/scripts/check_markdown_bullets.py"]
