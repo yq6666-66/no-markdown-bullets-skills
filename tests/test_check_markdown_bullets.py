@@ -135,6 +135,51 @@ class ScanTextTests(unittest.TestCase):
         self.assertEqual(result.suppressed_lines, 2)
         self.assertEqual(result.findings, [])
 
+    def test_single_quoted_reason_is_accepted(self):
+        text = (
+            "<!-- no-markdown-bullets: off reason='legacy' -->\n"
+            "- hidden\n"
+            "<!-- no-markdown-bullets: on reason='done' -->\n"
+            "- visible\n"
+        )
+        self.assertEqual(self.lines(text), [4])
+
+    def test_indented_directive_is_honoured(self):
+        text = (
+            "   <!-- no-markdown-bullets: off reason=\"x\" -->\n"
+            "- hidden\n"
+            "<!-- no-markdown-bullets: on reason=\"y\" -->\n"
+            "- visible\n"
+        )
+        self.assertEqual(self.lines(text), [4])
+
+    def test_angle_bracket_in_text_is_not_a_quote(self):
+        self.assertEqual(self.lines("a > b\n- c\n"), [2])
+
+    def test_quote_without_space_still_counts(self):
+        self.assertEqual(self.lines(">- quoted\n"), [1])
+
+    def test_marker_without_following_space_is_not_a_list(self):
+        self.assertEqual(self.lines("-foo\n*bar\n+baz\n"), [])
+
+    def test_overlong_digit_run_does_not_swallow_next_bullet(self):
+        self.assertEqual(self.lines("1234567890. text\n- item\n"), [2])
+
+    def test_deeply_nested_blockquote(self):
+        self.assertEqual(self.lines("> > > - deep\n"), [1])
+
+    def test_four_backtick_fence_keeps_three_backtick_line(self):
+        text = "````markdown\n```\n- code\n````\n- real\n"
+        self.assertEqual(self.lines(text), [5])
+
+    def test_tilde_fence_ignores_backticks(self):
+        text = "~~~\n```\n- code\n~~~\n- real\n"
+        self.assertEqual(self.lines(text), [5])
+
+    def test_blockquote_lists_do_not_leak_into_next_blockquote(self):
+        text = "> 1. item\n>    - nested\n\n> - second\n"
+        self.assertEqual(self.lines(text), [2, 4])
+
 
 class CommandTests(unittest.TestCase):
     def test_good_bad_and_override_exit_codes(self):
@@ -245,6 +290,52 @@ class CommandTests(unittest.TestCase):
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 SKILL_DIR = REPO_ROOT / "no-markdown-bullets"
+
+
+class WalkTests(unittest.TestCase):
+    """Lock down which files a directory scan sees."""
+
+    def walk(self, root):
+        return [path.name for path in CHECKER._iter_markdown_files(root)]
+
+    def test_ignored_directories_are_pruned(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / "notes").mkdir()
+            (root / "notes" / "keep.md").write_text("1. x\n", encoding="utf-8")
+            for ignored in ("node_modules", ".venv", "__pycache__", ".git"):
+                folder = root / ignored
+                folder.mkdir()
+                (folder / "skip.md").write_text("- x\n", encoding="utf-8")
+            self.assertEqual(self.walk(root), ["keep.md"])
+
+    def test_explicitly_passing_an_ignored_directory_yields_nothing(self):
+        with tempfile.TemporaryDirectory() as directory:
+            folder = Path(directory) / "node_modules"
+            folder.mkdir()
+            (folder / "skip.md").write_text("- x\n", encoding="utf-8")
+            self.assertEqual(self.walk(folder), [])
+
+    def test_suffix_match_is_case_insensitive(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / "UPPER.MD").write_text("1. x\n", encoding="utf-8")
+            (root / "lower.md").write_text("1. x\n", encoding="utf-8")
+            (root / "notes.txt").write_text("- x\n", encoding="utf-8")
+            # Sort order differs between platforms, the membership does not.
+            self.assertEqual(sorted(self.walk(root)), ["UPPER.MD", "lower.md"])
+
+    def test_nested_files_are_found_in_stable_order(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            for depth in range(3):
+                folder = root.joinpath(*[f"level{index}" for index in range(depth + 1)])
+                folder.mkdir(parents=True, exist_ok=True)
+                (folder / f"doc{depth}.md").write_text("1. x\n", encoding="utf-8")
+            first = [str(path) for path in CHECKER._iter_markdown_files(root)]
+            second = [str(path) for path in CHECKER._iter_markdown_files(root)]
+            self.assertEqual(first, second)
+            self.assertEqual(len(first), 3)
 
 
 class RepositoryConsistencyTests(unittest.TestCase):

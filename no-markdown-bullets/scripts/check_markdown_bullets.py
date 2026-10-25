@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import re
 import sys
 from dataclasses import dataclass, field
@@ -38,7 +39,17 @@ FENCE_RE = re.compile(r"^[ \t]*(`{3,}|~{3,})(?:[^`]*)$")
 UNORDERED_RE = re.compile(r"^([-+*])(?:[ \t]+|$)")
 ORDERED_RE = re.compile(r"^\d{1,9}[.)](?:[ \t]+|$)")
 QUOTE_RE = re.compile(r"^[ \t]{0,3}>[ \t]?")
-IGNORED_DIRS = {".git", ".hg", ".svn", "node_modules", "__pycache__"}
+IGNORED_DIRS = {
+    ".git",
+    ".hg",
+    ".svn",
+    "node_modules",
+    "__pycache__",
+    ".venv",
+    "venv",
+    ".tox",
+    "__pypackages__",
+}
 
 SUPPRESSION_OFF = "no-markdown-bullets: off"
 SUPPRESSION_ON = "no-markdown-bullets: on"
@@ -365,19 +376,45 @@ def scan_text(text: str) -> list[Finding]:
     return scan_document(text).findings
 
 
-def _iter_markdown_files(path: Path) -> Iterable[Path]:
-    """Yield the Markdown files under ``path`` in a stable order."""
-    if path.is_file():
-        yield path
+def _iter_markdown_files(root: Path) -> Iterable[Path]:
+    """Yield Markdown files under ``root`` in a stable order.
+
+    Ignored directories are pruned before descending instead of being visited
+    and discarded afterwards, which is what makes scanning a repository with a
+    ``node_modules`` or virtualenv tree affordable.
+    """
+    if root.is_file():
+        yield root
         return
-    for candidate in sorted(path.rglob("*")):
-        if not candidate.is_file():
+    if any(part in IGNORED_DIRS for part in root.parts):
+        return
+
+    found: list[Path] = []
+    pending = [str(root)]
+    while pending:
+        current = pending.pop()
+        try:
+            entries = os.scandir(current)
+        except OSError:
+            # An unreadable directory is skipped rather than aborting the walk.
             continue
-        if candidate.suffix.lower() != FILENAME_SUFFIX:
-            continue
-        if any(part in IGNORED_DIRS for part in candidate.parts):
-            continue
-        yield candidate
+        with entries:
+            for entry in entries:
+                try:
+                    is_dir = entry.is_dir(follow_symlinks=False)
+                except OSError:
+                    continue
+                if is_dir:
+                    if entry.name not in IGNORED_DIRS:
+                        pending.append(entry.path)
+                    continue
+                candidate = Path(entry.path)
+                if candidate.suffix.lower() != FILENAME_SUFFIX:
+                    continue
+                if candidate.is_file():
+                    found.append(candidate)
+    found.sort()
+    yield from found
 
 
 def _read_text(path: Path) -> str:
