@@ -1,0 +1,289 @@
+"""fixtures、退出码、CLI 与仓库文案的验收测试。"""
+
+from __future__ import annotations
+
+import importlib.util
+import json
+import subprocess
+import sys
+import tempfile
+import unittest
+from pathlib import Path
+
+
+ROOT = Path(__file__).resolve().parents[1]
+SCRIPT = ROOT / "scripts" / "strip_md_ul.py"
+SPEC = importlib.util.spec_from_file_location("strip_md_ul", SCRIPT)
+strip_md_ul = importlib.util.module_from_spec(SPEC)
+assert SPEC.loader is not None
+sys.modules[SPEC.name] = strip_md_ul
+SPEC.loader.exec_module(strip_md_ul)
+
+DOC_PATHS = [
+    ROOT / "README.md",
+    ROOT / "INTEGRATION.md",
+    ROOT / "fixtures" / "README.md",
+    ROOT / "skills" / "no-markdown-bullets" / "SKILL.md",
+    *sorted((ROOT / "docs").glob("*.md")),
+]
+
+
+def fixture_cases():
+    cases = []
+    for meta_path in sorted((ROOT / "fixtures").glob("*/meta.json")):
+        meta = json.loads(meta_path.read_text(encoding="utf-8"))
+        folder = meta_path.parent
+        cases.append(
+            {
+                "name": folder.name,
+                "meta": meta,
+                "input": (folder / "input.md").read_bytes(),
+                "expected": (folder / "expected.md").read_bytes(),
+            }
+        )
+    return cases
+
+
+class FixtureTests(unittest.TestCase):
+    def test_fixture_set_covers_required_boundaries(self):
+        names = {case["name"] for case in fixture_cases()}
+        required = {
+            "01_leading_ul",
+            "02_ordered",
+            "03_blockquote_ul",
+            "04_nested",
+            "05_task_list",
+            "06_empty_item",
+            "07_fence_backtick",
+            "08_fence_tilde",
+            "09_fence_unclosed",
+            "10_fence_in_blockquote",
+            "11_fence_in_list",
+            "12_thematic",
+            "13_yaml_front_matter",
+            "15_table",
+            "16_emphasis",
+            "17_indented_code",
+            "18_list_continuation",
+            "19_blank_interrupts",
+            "21_new_heading",
+            "22_residual_ul",
+            "23_crlf",
+            "24_tab_after_marker",
+            "25_no_final_newline",
+            "29_json_fence",
+        }
+        self.assertTrue(required <= names)
+
+    def test_each_fixture_has_input_expected_and_skip_reason(self):
+        cases = fixture_cases()
+        self.assertGreaterEqual(len(cases), 41)
+        for case in cases:
+            with self.subTest(case=case["name"]):
+                meta = case["meta"]
+                self.assertIn("description", meta)
+                self.assertIsInstance(meta["expect_exit"], int)
+                self.assertIn(meta["expect_exit"], (0, 1, 2))
+                self.assertIsInstance(meta["skip_reason"], str)
+                self.assertTrue(meta["skip_reason"].strip())
+                self.assertTrue(case["input"] or case["name"])
+                self.assertIn("expected", case)
+
+    def test_strip_matches_expected_bytes_and_exit(self):
+        for case in fixture_cases():
+            with self.subTest(case=case["name"]):
+                text = case["input"].decode("utf-8")
+                result = strip_md_ul.strip_text(text)
+                self.assertEqual(result.exit_code, case["meta"]["expect_exit"])
+                self.assertEqual(result.text.encode("utf-8"), case["expected"])
+
+    def test_success_and_skip_results_are_idempotent(self):
+        for case in fixture_cases():
+            if case["meta"]["expect_exit"] == 1:
+                continue
+            with self.subTest(case=case["name"]):
+                first = strip_md_ul.strip_text(case["input"].decode("utf-8"))
+                second = strip_md_ul.strip_text(first.text)
+                self.assertEqual(second.text, first.text)
+                self.assertEqual(second.exit_code, first.exit_code)
+
+    def test_crlf_and_missing_newline_bytes_stay_on_disk(self):
+        crlf = (ROOT / "fixtures" / "23_crlf" / "input.md").read_bytes()
+        self.assertIn(b"\r\n", crlf)
+        self.assertNotIn(b"\n", crlf.replace(b"\r\n", b""))
+        bare = (ROOT / "fixtures" / "25_no_final_newline" / "input.md").read_bytes()
+        self.assertFalse(bare.endswith(b"\n"))
+        self.assertFalse(bare.endswith(b"\r"))
+
+
+class CommandTests(unittest.TestCase):
+    def test_stdout_does_not_overwrite_source(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "note.md"
+            path.write_bytes("- keep-source\n".encode("utf-8"))
+            before = path.read_bytes()
+            proc = subprocess.run(
+                [sys.executable, str(SCRIPT), str(path)],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+            self.assertEqual(proc.returncode, 0)
+            self.assertEqual(proc.stdout, b"keep-source\n")
+            self.assertEqual(path.read_bytes(), before)
+            self.assertIn(b"info: stripped=1", proc.stderr)
+
+    def test_check_suppresses_body_and_keeps_exit_code(self):
+        source = ROOT / "fixtures" / "01_leading_ul" / "input.md"
+        proc = subprocess.run(
+            [sys.executable, str(SCRIPT), "--check", str(source)],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            check=False,
+        )
+        self.assertEqual(proc.returncode, 0)
+        self.assertEqual(proc.stdout, b"")
+        self.assertIn(b"info: stripped=3", proc.stderr)
+
+    def test_dry_run_matches_default_stdout(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "note.md"
+            path.write_text("- item\n", encoding="utf-8")
+            default = subprocess.run(
+                [sys.executable, str(SCRIPT), str(path)],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+            dry = subprocess.run(
+                [sys.executable, str(SCRIPT), "--dry-run", str(path)],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+            self.assertEqual(default.returncode, 0)
+            self.assertEqual(dry.returncode, 0)
+            self.assertEqual(dry.stdout, default.stdout)
+            self.assertIn(b"info: dry-run source-not-modified", dry.stderr)
+            self.assertEqual(path.read_text(encoding="utf-8"), "- item\n")
+
+    def test_residual_exit_and_unclosed_fence_exit(self):
+        residual = ROOT / "fixtures" / "22_residual_ul"
+        proc = subprocess.run(
+            [sys.executable, str(SCRIPT), str(residual / "input.md")],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            check=False,
+        )
+        self.assertEqual(proc.returncode, 1)
+        self.assertEqual(proc.stdout, (residual / "expected.md").read_bytes())
+        self.assertIn(b"residual unordered list", proc.stderr)
+
+        unclosed = ROOT / "fixtures" / "09_fence_unclosed" / "input.md"
+        proc = subprocess.run(
+            [sys.executable, str(SCRIPT), "--check", str(unclosed)],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            check=False,
+        )
+        self.assertEqual(proc.returncode, 2)
+        self.assertEqual(proc.stdout, b"")
+        self.assertIn(b"unclosed fence", proc.stderr)
+
+    def test_cli_preserves_crlf_bytes(self):
+        folder = ROOT / "fixtures" / "23_crlf"
+        proc = subprocess.run(
+            [sys.executable, str(SCRIPT), str(folder / "input.md")],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            check=False,
+        )
+        self.assertEqual(proc.returncode, 0)
+        self.assertEqual(proc.stdout, (folder / "expected.md").read_bytes())
+
+    def test_stdin_and_dash(self):
+        for args in ([str(SCRIPT)], [str(SCRIPT), "-"]):
+            with self.subTest(args=args):
+                proc = subprocess.run(
+                    [sys.executable, *args],
+                    input=b"* item\n",
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
+                    check=False,
+                )
+                self.assertEqual(proc.returncode, 0)
+                self.assertEqual(proc.stdout, b"item\n")
+
+    def test_usage_and_io_errors_exit_1(self):
+        missing = subprocess.run(
+            [sys.executable, str(SCRIPT), "missing-file.md"],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            check=False,
+        )
+        self.assertEqual(missing.returncode, 1)
+        self.assertIn(b"not a file", missing.stderr)
+
+        both = subprocess.run(
+            [sys.executable, str(SCRIPT), "--check", "--dry-run"],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            check=False,
+        )
+        self.assertEqual(both.returncode, 1)
+
+        unknown = subprocess.run(
+            [sys.executable, str(SCRIPT), "--no-such-flag"],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            check=False,
+        )
+        self.assertEqual(unknown.returncode, 1)
+
+        with tempfile.TemporaryDirectory() as directory:
+            directory_arg = subprocess.run(
+                [sys.executable, str(SCRIPT), directory],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+            self.assertEqual(directory_arg.returncode, 1)
+
+
+class RepoTextTests(unittest.TestCase):
+    def test_delivered_docs_have_no_strippable_ul(self):
+        for path in DOC_PATHS:
+            with self.subTest(path=path.relative_to(ROOT).as_posix()):
+                result = strip_md_ul.strip_text(path.read_text(encoding="utf-8"))
+                self.assertEqual(result.stripped_lines, [], result.diagnostics)
+                self.assertEqual(result.exit_code, 0, result.diagnostics)
+
+    def test_license_is_mit(self):
+        text = (ROOT / "LICENSE").read_text(encoding="utf-8")
+        self.assertIn("MIT License", text)
+        self.assertIn("Permission is hereby granted", text)
+
+    def test_no_out_of_scope_claims(self):
+        needles = (
+            "408" + "-codex-plugin",
+            "竞" + "品",
+            "human" + "ize",
+            "Work" + "Buddy",
+        )
+        scanned = []
+        for path in ROOT.rglob("*"):
+            if not path.is_file():
+                continue
+            if any(part in {".git", "__pycache__"} for part in path.parts):
+                continue
+            if path.suffix.lower() not in {".md", ".py", ".yml", ".json", ".txt"}:
+                continue
+            scanned.append(path)
+            text = path.read_text(encoding="utf-8")
+            for needle in needles:
+                self.assertNotIn(needle, text, f"{path} contains {needle}")
+        self.assertTrue(scanned)
+
+
+if __name__ == "__main__":
+    unittest.main()

@@ -1,0 +1,5 @@
+{
+  "description": "加号列表与加号分隔线",
+  "expect_exit": 0,
+  "skip_reason": "无。+ item 要剥；+ + + 是分隔线，不剥"
+}

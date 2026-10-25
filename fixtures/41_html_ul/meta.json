@@ -1,0 +1,5 @@
+{
+  "description": "HTML ul 不转换",
+  "expect_exit": 0,
+  "skip_reason": "HTML ul 不在转换范围；没有空行时整段仍是 HTML 原始块"
+}

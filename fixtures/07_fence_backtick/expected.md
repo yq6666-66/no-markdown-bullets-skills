@@ -1,0 +1,5 @@
+```markdown
+- keep
+* keep
+```
+strip

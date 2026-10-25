@@ -1,0 +1,5 @@
+{
+  "description": "未闭合的 pre 原始块",
+  "expect_exit": 2,
+  "skip_reason": "未闭合的 pre/script/style/textarea 跳到 EOF"
+}

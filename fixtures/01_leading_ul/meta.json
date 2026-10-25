@@ -1,0 +1,5 @@
+{
+  "description": "行首 -、*、+ 无序列表",
+  "expect_exit": 0,
+  "skip_reason": "无"
+}

@@ -1,0 +1,5 @@
+{
+  "description": "剥后变成标题",
+  "expect_exit": 0,
+  "skip_reason": "无。允许剥后变成标题，不保证和原来的列表语义等价"
+}

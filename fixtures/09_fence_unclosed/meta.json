@@ -1,0 +1,5 @@
+{
+  "description": "未闭合围栏跳到文件末尾",
+  "expect_exit": 2,
+  "skip_reason": "未闭合围栏从开栏跳到 EOF，栏内以及开栏之后的正文都不剥"
+}

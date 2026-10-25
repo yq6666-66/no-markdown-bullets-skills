@@ -1,0 +1,5 @@
+{
+  "description": "setext 下划线后的 UL",
+  "expect_exit": 0,
+  "skip_reason": "无。--- 作分隔线或 setext 下划线都不剥"
+}

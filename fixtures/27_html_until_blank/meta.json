@@ -1,0 +1,5 @@
+{
+  "description": "闭合标签本身不结束 HTML 块",
+  "expect_exit": 0,
+  "skip_reason": "块级 HTML 只在空行结束，闭合标签的下一行若没有空行，仍留在原始块里"
+}

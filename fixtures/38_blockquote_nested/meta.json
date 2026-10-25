@@ -1,0 +1,5 @@
+{
+  "description": "引用块内的嵌套 UL",
+  "expect_exit": 0,
+  "skip_reason": "无。引用前缀保留，嵌套标记剥掉并留下原缩进"
+}

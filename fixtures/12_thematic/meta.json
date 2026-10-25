@@ -1,0 +1,5 @@
+{
+  "description": "主题分隔线",
+  "expect_exit": 0,
+  "skip_reason": "分隔线在剥 UL 之前识别，整行不改"
+}

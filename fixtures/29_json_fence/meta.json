@@ -1,0 +1,5 @@
+{
+  "description": "围栏中的 JSON",
+  "expect_exit": 0,
+  "skip_reason": "JSON 示例放在围栏里，栏内字符不剥"
+}

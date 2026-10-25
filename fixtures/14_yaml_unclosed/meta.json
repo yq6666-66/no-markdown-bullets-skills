@@ -1,0 +1,5 @@
+{
+  "description": "未闭合的起始 --- 不是 front matter",
+  "expect_exit": 0,
+  "skip_reason": "起始 --- 没有闭合分隔，不当作 front matter；首行按分隔线保留"
+}

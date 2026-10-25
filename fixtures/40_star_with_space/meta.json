@@ -1,0 +1,5 @@
+{
+  "description": "星号加空格是 UL",
+  "expect_exit": 0,
+  "skip_reason": "无。星号后有空格就是 UL，和行内强调不同"
+}

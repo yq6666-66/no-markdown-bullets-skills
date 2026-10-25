@@ -1,0 +1,5 @@
+{
+  "description": "空列表项",
+  "expect_exit": 0,
+  "skip_reason": "无。空列表项变成空行"
+}

@@ -1,0 +1,5 @@
+{
+  "description": "列表容器内的围栏",
+  "expect_exit": 0,
+  "skip_reason": "列表容器内的围栏先剥掉列表前缀再判断，栏内不剥"
+}

@@ -1,0 +1,5 @@
+{
+  "description": "HTML 块级原始块直到空行",
+  "expect_exit": 0,
+  "skip_reason": "HTML 块级原始块直到空行，块内标记不剥"
+}

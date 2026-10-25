@@ -1,0 +1,5 @@
+{
+  "description": "嵌套 UL",
+  "expect_exit": 0,
+  "skip_reason": "无。保留标记前面的缩进"
+}

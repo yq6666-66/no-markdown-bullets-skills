@@ -1,0 +1,5 @@
+{
+  "description": "引用容器内的围栏",
+  "expect_exit": 0,
+  "skip_reason": "引用容器内的围栏先剥掉 > 再判断开闭，栏内不剥"
+}
