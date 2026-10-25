@@ -1,0 +1,21 @@
+{
+  "findings": [
+    {
+      "line": 33,
+      "code": "unordered-list",
+      "message": "Markdown unordered list marker '-'"
+    },
+    {
+      "line": 34,
+      "code": "unordered-list",
+      "message": "Markdown unordered list marker '+'"
+    },
+    {
+      "line": 35,
+      "code": "unordered-list",
+      "message": "Markdown unordered list marker '*'"
+    }
+  ],
+  "suppressed_lines": 0,
+  "suppression_blocks": 0
+}

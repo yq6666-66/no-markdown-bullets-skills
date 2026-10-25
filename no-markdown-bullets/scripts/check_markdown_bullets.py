@@ -251,14 +251,10 @@ class _BlockScanner:
 
     def _feed(self, number: int, raw_line: str) -> None:
         depth, rest = _split_quote_prefix(raw_line)
+        self._close_outer_lists(depth)
 
         if self._fences and self._consume_fenced(raw_line, depth):
             return
-
-        if depth == 0 and len(self._list_indents) > 1:
-            # A top-level line closes any open blockquote, so indentation state
-            # recorded for deeper depths is stale.
-            self._drop_blockquote_lists()
 
         content = rest.lstrip(" \t")
         # Comparing lengths is cheaper than measuring the prefix, and most
@@ -318,6 +314,23 @@ class _BlockScanner:
 
     def _drop_blockquote_lists(self) -> None:
         for key in [key for key in self._list_indents if key]:
+            del self._list_indents[key]
+
+    def _close_outer_lists(self, depth: int) -> None:
+        """Discard indentation state that this line's container invalidates.
+
+        A line belongs to exactly one container depth. A top-level line ends any
+        blockquote, and a quoted line ends any list that was open outside the
+        quote. Without this, a list interrupted by a blockquote keeps claiming
+        the following indented code block as one of its items.
+        """
+        if not self._list_indents:
+            return
+        if depth == 0:
+            if len(self._list_indents) > 1:
+                self._drop_blockquote_lists()
+            return
+        for key in [key for key in self._list_indents if key < depth]:
             del self._list_indents[key]
 
     def _consume_fenced(self, raw_line: str, depth: int) -> bool:

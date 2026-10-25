@@ -1,0 +1,46 @@
+{
+  "findings": [
+    {
+      "line": 4,
+      "code": "unordered-list",
+      "message": "Markdown unordered list marker '-'"
+    },
+    {
+      "line": 5,
+      "code": "unordered-list",
+      "message": "Markdown unordered list marker '-'"
+    },
+    {
+      "line": 9,
+      "code": "unordered-list",
+      "message": "Markdown unordered list marker '-'"
+    },
+    {
+      "line": 11,
+      "code": "unordered-list",
+      "message": "Markdown unordered list marker '-'"
+    },
+    {
+      "line": 19,
+      "code": "unordered-list",
+      "message": "Markdown unordered list marker '-'"
+    },
+    {
+      "line": 23,
+      "code": "unordered-list",
+      "message": "Markdown unordered list marker '-'"
+    },
+    {
+      "line": 24,
+      "code": "unordered-list",
+      "message": "Markdown unordered list marker '-'"
+    },
+    {
+      "line": 29,
+      "code": "unordered-list",
+      "message": "Markdown unordered list marker '-'"
+    }
+  ],
+  "suppressed_lines": 0,
+  "suppression_blocks": 0
+}
