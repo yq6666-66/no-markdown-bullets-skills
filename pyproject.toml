@@ -12,4 +12,8 @@ select = ["E", "F", "W", "I", "UP", "B", "SIM", "RET", "ARG", "PTH", "C4", "PERF
 [tool.mypy]
 python_version = "3.10"
 strict = true
-files = ["no-markdown-bullets/scripts/check_markdown_bullets.py"]
+files = [
+    "no-markdown-bullets/scripts/check_markdown_bullets.py",
+    "no-markdown-bullets/scripts/check_docx_numbering.py",
+    "evals/run_eval.py",
+]
