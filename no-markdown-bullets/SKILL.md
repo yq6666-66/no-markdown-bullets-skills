@@ -46,6 +46,14 @@ Markdown 的无序列表对应 HTML `<ul>`，浏览器的默认 `list-style-type
 
 如果同一份内容会流向多个场景，先生成符合本约定的共同源稿，再按目标场景转换，不为任一场景重新引入无序列表。
 
+Word 场景可以端到端验证，因为 `.docx` 里的项目符号来自 `numPr` 定义：
+
+```bash
+python scripts/check_docx_numbering.py report.docx
+```
+
+它解析段落直接的 `w:numPr`、段落样式的 `w:numPr` 以及 `w:basedOn` 继承链，只报告解析结果为 `bullet` 的段落。这只覆盖生成或已有的文件，覆盖不到用户手工粘贴进去的内容。
+
 ## 正面生成流程
 
 1. 先判断内容属于叙述、步骤还是同构字段，再选择段落、编号列表或表格。

@@ -21,12 +21,16 @@ jobs:
           python-version: ${{ matrix.python-version }}
       - name: Run unit tests
         run: python -m unittest discover -s tests -v
+      - name: Run docx tests with the optional dependency present
+        run: |
+          python -m pip install --disable-pip-version-check python-docx
+          python -m unittest tests.test_check_docx_numbering -v
       - name: Check valid example
         run: python no-markdown-bullets/scripts/check_markdown_bullets.py no-markdown-bullets/examples/good.md
       - name: Check shipped docs pass their own rule
         run: |
           python no-markdown-bullets/scripts/check_markdown_bullets.py \
-            README.md CHANGELOG.md docs/design.md \
+            README.md CHANGELOG.md docs/design.md evals/README.md \
             no-markdown-bullets/SKILL.md no-markdown-bullets/references/scenarios.md
       - name: Check invalid example is rejected
         shell: bash
@@ -59,4 +63,27 @@ jobs:
         run: python -m ruff check .
       - name: Mypy
         run: python -m mypy
+
+  eval-harness:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Prompt set loads
+        run: python evals/run_eval.py --dry-run
+      - name: Harness runs end to end on a stub provider
+        shell: bash
+        run: |
+          # The stub echoes the prompt back as prose. This checks the plumbing,
+          # not model behavior: a real measurement needs recorded answers.
+          python evals/run_eval.py --command "cat" --condition ci-stub \
+            --out evals/results/ci-stub.json
+          python -c "
+          import json
+          d = json.load(open('evals/results/ci-stub.json'))
+          assert d['summary']['outputs'] == 8, d['summary']
+          assert d['summary']['bullet_rate'] == 0.0, d['summary']
+          "
 

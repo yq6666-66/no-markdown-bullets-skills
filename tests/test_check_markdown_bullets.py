@@ -394,6 +394,7 @@ class RepositoryConsistencyTests(unittest.TestCase):
             REPO_ROOT / "README.md",
             REPO_ROOT / "CHANGELOG.md",
             REPO_ROOT / "docs" / "design.md",
+            REPO_ROOT / "evals" / "README.md",
             SKILL_DIR / "SKILL.md",
             SKILL_DIR / "references" / "scenarios.md",
         ]
@@ -434,6 +435,12 @@ class RepositoryConsistencyTests(unittest.TestCase):
         text = (SKILL_DIR / "SKILL.md").read_text(encoding="utf-8-sig")
         self.assertIn(CHECKER.SUPPRESSION_OFF, text)
         self.assertIn(CHECKER.SUPPRESSION_ON, text)
+
+    def test_skill_package_contents_are_self_contained(self):
+        # The package must stay copyable: every script it advertises exists.
+        for name in ("check_markdown_bullets.py", "check_docx_numbering.py"):
+            with self.subTest(script=name):
+                self.assertTrue((SKILL_DIR / "scripts" / name).is_file())
 
 
 if __name__ == "__main__":

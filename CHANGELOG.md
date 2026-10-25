@@ -2,6 +2,28 @@
 
 本项目从 0.2.0 起按语义化版本记录。判定规则的收紧、跳过范围的变化、退出码语义的调整都会影响下游集成，需要单独标注。
 
+## 0.3.0
+
+补齐 Word 侧验证与有效性度量。两项都是新增工具，不改变 Markdown 检查器的任何行为。
+
+### 新增
+
+1. `scripts/check_docx_numbering.py`，纯标准库解析 `.docx`，报告落到 `bullet` 编号的段落。编号来源解析三条路径：段落直接的 `w:numPr`、段落样式的 `w:numPr`、以及样式的 `w:basedOn` 继承链。`numId` 为 `0` 视为无编号跳过；`decimal` 等有序格式不报。退出码与 Markdown 检查器一致，支持 `--format json`。
+2. `evals/`，八条固定提示的抽样度量。每条提示声明期望结构（`prose`、`ordered`、`table`、`table_or_ordered`、`ordered_or_prose`），支持两种输入：录制答案目录，或任何从 stdin 读提示的命令。`--compare` 输出逐条对比与总体 `bullet_rate` delta。
+3. `evals/README.md`，写明度量能证明什么、不能证明什么。单次运行是基线不是结果；没有对照组就没有归因。
+4. `_BlockScanner` 之外新增 `tests/test_check_docx_numbering.py` 与 `tests/test_run_eval.py`，共 47 项。
+
+### 变更
+
+1. 仓库文档一致性测试扩展到 `evals/README.md`，并新增断言：技能包对外宣称的两个脚本必须存在，防止包不再自洽。
+2. `pyproject.toml` 的 mypy 检查范围加入两个新脚本，仍为 `strict`。
+
+### 说明
+
+`python-docx` 仅为可选测试依赖。装有时额外三项用真实库生成的文档验证解析器，未安装时自动跳过；运行时始终零第三方依赖。
+
+度量默认不修改仓库：`evals/results/` 与 `evals/samples/` 已在 `.gitignore` 中。
+
 ## 0.2.1
 
 判定修复、性能优化与工程化门槛。接口与 0.2.0 兼容。

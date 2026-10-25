@@ -11,10 +11,17 @@ no-markdown-bullets/
   SKILL.md                       # 可直接放入 Skills 目录的完整约定
   references/scenarios.md        # GitHub、聊天、Word 的分场景规则
   scripts/check_markdown_bullets.py
+  scripts/check_docx_numbering.py  # Word 侧验证：报告落到 bullet 编号的段落
   examples/good.md
   examples/bad.md                # 故意违规，供负例验证
   examples/suppression.md        # 作用域抑制的端到端示例
 tests/test_check_markdown_bullets.py
+tests/test_check_docx_numbering.py
+tests/test_run_eval.py
+tests/fixtures/                  # 黄金基线，逐条人工核对过
+benchmarks/                      # 扫描与遍历基准，支持 --baseline
+evals/                           # 8 条提示的抽样度量
+tools/regenerate_fixtures.py
 docs/design.md                   # 根因、方案取舍与判定边界
 CHANGELOG.md
 .github/workflows/validate.yml
@@ -119,6 +126,34 @@ python scripts/check_markdown_bullets.py --format json /path/to/docs
 
 脚本只读，不自动改写。自动替换无法可靠地区分步骤、对比和叙述，因此修复应依据 `references/scenarios.md` 选择语义结构。
 
+## Word 侧校验
+
+Markdown 检查管不到 `.docx`。Word 文件的项目符号来自 `numPr` 编号定义，所以要验证 Word 场景必须读文件本身：
+
+```bash
+python no-markdown-bullets/scripts/check_docx_numbering.py report.docx
+python no-markdown-bullets/scripts/check_docx_numbering.py docs/ --format json
+```
+
+纯标准库解析 OOXML，不依赖第三方包。编号来源三条路径都会解析：段落直接的 `w:numPr`、段落样式自带的 `w:numPr`、以及该样式的 `w:basedOn` 继承链。`numId` 为 `0` 是 Word 的"无编号"，跳过。只有解析出的编号格式为 `bullet` 才报；`decimal` 等有序格式不报。
+
+退出码与其他脚本一致：`0` 通过、`1` 发现项目符号、`2` 输入不可读。
+
+已知边界：只覆盖生成或已有的 `.docx`，覆盖不到用户从别处粘贴进 Word 的内容；也不解析 `w:link` 关联样式。
+
+## 抽样度量
+
+检查器正确不代表规则有效。`evals/` 用八条固定提示跑两种条件并对比，衡量圆点比例、编号与表格保留率、以及解释型问题是否仍写成段落。
+
+```bash
+python evals/run_eval.py --dry-run
+python evals/run_eval.py --samples evals/samples --condition baseline
+python evals/run_eval.py --command "my-agent --print" --condition with-skill
+python evals/run_eval.py --compare evals/results/a.json evals/results/b.json
+```
+
+单次运行只是基线，不是结果。具体口径与不能证明的事项见 `evals/README.md`。
+
 ## 开发验证
 
 在仓库根目录运行：
@@ -131,6 +166,8 @@ python no-markdown-bullets/scripts/check_markdown_bullets.py no-markdown-bullets
 ```
 
 前三条返回退出码 `0`，最后一条应返回 `1`，因为 `bad.md` 是故意保留的违规样本。测试套件同时校验仓库自身文档符合本规则，避免文档与实现漂移。
+
+`python-docx` 是可选测试依赖。装有它时，额外三项会用真实库生成的文档验证解析器，覆盖默认模板的 `List Bullet` 与 `List Number` 样式；未安装时这三项自动跳过。
 
 静态检查与性能基准：
 
@@ -148,3 +185,5 @@ python benchmarks/bench_walk.py  --baseline <old-checker.py>
 此项目只约束 Markdown 无序列表。它不禁用编号列表或表格，不修改语言风格，不检查事实，不替代文档排版工具，也不保证所有聊天客户端都支持表格。
 
 本仓库对自身 Skill 包负责，不含与外部插件、其他 Agent 生态的组合约定，也不提供安装到特定平台之外的适配。
+
+度量工具只衡量结构，不评判内容质量。它不会告诉你哪个答案更好，只会告诉你圆点少了没有、编号和表格还在不在、段落有没有被压成墙。

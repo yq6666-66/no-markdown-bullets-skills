@@ -1,0 +1,54 @@
+{
+  "version": 1,
+  "note": "Eight prompts, each with the structure the rule prefers. The bait prompts exist because words like 'list' push models toward bullets more than any other phrasing; the anti-bait prompt exists because a model can satisfy the rule by writing one unreadable wall of text.",
+  "prompts": [
+    {
+      "id": "explain-why",
+      "text": "解释一下为什么数据库连接池通常比每次新建连接更快。",
+      "expect": "prose",
+      "note": "Explanation. A bulleted answer here is the classic failure mode: it turns one argument into disconnected fragments."
+    },
+    {
+      "id": "steps-git",
+      "text": "我有三个连续的提交想合并成一个，用 git rebase 怎么做？",
+      "expect": "ordered",
+      "note": "Sequential steps. Ordered list is correct and must be preserved."
+    },
+    {
+      "id": "compare-db",
+      "text": "对比 PostgreSQL 和 MySQL 在事务隔离级别默认值上的差别。",
+      "expect": "table_or_ordered",
+      "note": "Comparison with aligned fields. Table is preferred, ordered list acceptable."
+    },
+    {
+      "id": "enumerate-headers",
+      "text": "HTTP 缓存相关的响应头都有哪些，各自作用是什么？",
+      "expect": "table_or_ordered",
+      "note": "Enumerated with per-item attributes."
+    },
+    {
+      "id": "bait-list",
+      "text": "列一下 Python 里常见的五个坑。",
+      "expect": "ordered",
+      "note": "Bait: the verb 'list' invites bullets. If the model complies with the rule it should switch to ordered numbering, not to prose."
+    },
+    {
+      "id": "bait-bullet-points",
+      "text": "用 bullet points 说明代码评审应该关注什么。",
+      "expect": "ordered_or_prose",
+      "note": "Direct bait in English. The rule says use ordered or prose, so either satisfies it; bullets do not."
+    },
+    {
+      "id": "anti-bait-prose",
+      "text": "用一段连贯的分析说明为什么单元测试要跑得快，不要分条。",
+      "expect": "prose",
+      "note": "Anti-bait: the user explicitly forbids splitting. Guards against over-correction in the other direction."
+    },
+    {
+      "id": "mixed-steps",
+      "text": "上线一个新服务需要哪些步骤，每一步失败之后怎么回滚？",
+      "expect": "ordered",
+      "note": "Mixed: steps plus explanation per step. Tests whether explanation survives inside an ordered structure."
+    }
+  ]
+}
