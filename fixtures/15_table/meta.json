@@ -1,0 +1,5 @@
+{
+  "description": "表格单元格中的标记",
+  "expect_exit": 0,
+  "skip_reason": "表格块整块不改，单元格里的标记保留"
+}

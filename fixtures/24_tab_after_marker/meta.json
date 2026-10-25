@@ -1,0 +1,5 @@
+{
+  "description": "标记后的 Tab",
+  "expect_exit": 0,
+  "skip_reason": "无。标记后的 Tab 与空格一样算列表空白"
+}

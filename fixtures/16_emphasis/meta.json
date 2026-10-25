@@ -1,0 +1,5 @@
+{
+  "description": "行内强调",
+  "expect_exit": 0,
+  "skip_reason": "行内强调没有「标记 + 空白」，不是 UL"
+}

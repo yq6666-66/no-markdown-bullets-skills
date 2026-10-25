@@ -1,0 +1,5 @@
+{
+  "description": "行首 Tab 的缩进代码",
+  "expect_exit": 0,
+  "skip_reason": "非列表上下文的行首 1 个 Tab 视作缩进代码"
+}

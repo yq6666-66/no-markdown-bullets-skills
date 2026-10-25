@@ -1,0 +1,5 @@
+{
+  "description": "转义与行内连字符",
+  "expect_exit": 0,
+  "skip_reason": "转义或行内的 - 不是行首 UL"
+}

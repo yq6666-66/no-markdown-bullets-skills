@@ -1,0 +1,5 @@
+{
+  "description": "引用块中的 UL",
+  "expect_exit": 0,
+  "skip_reason": "无。引用前缀保留，只剥列表标记"
+}

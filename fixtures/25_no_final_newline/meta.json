@@ -1,0 +1,5 @@
+{
+  "description": "无末尾换行",
+  "expect_exit": 0,
+  "skip_reason": "无。输入没有末尾换行时，输出也不补换行"
+}

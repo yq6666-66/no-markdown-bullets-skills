@@ -1,0 +1,5 @@
+{
+  "description": "任务列表剥成纯文本",
+  "expect_exit": 0,
+  "skip_reason": "无。任务框不保留，也不宣称勾选还在"
+}

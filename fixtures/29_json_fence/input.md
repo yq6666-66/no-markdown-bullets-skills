@@ -1,0 +1,6 @@
+```json
+{
+  "list": ["- not"]
+}
+```
+- strip

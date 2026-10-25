@@ -1,0 +1,5 @@
+{
+  "description": "有序列表保留",
+  "expect_exit": 0,
+  "skip_reason": "有序列表保留，不是 UL"
+}

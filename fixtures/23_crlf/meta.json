@@ -1,0 +1,5 @@
+{
+  "description": "CRLF 换行保真",
+  "expect_exit": 0,
+  "skip_reason": "无。保留 CRLF，不改成 LF"
+}

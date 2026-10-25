@@ -1,0 +1,5 @@
+{
+  "description": "闭合的 YAML front matter，内部含列表",
+  "expect_exit": 0,
+  "skip_reason": "文件起始且闭合的 YAML front matter 整段跳过，其中的列表不剥"
+}

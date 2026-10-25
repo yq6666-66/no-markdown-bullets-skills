@@ -1,0 +1,5 @@
+{
+  "description": "列表紧邻续行",
+  "expect_exit": 0,
+  "skip_reason": "无。紧邻续行原样保留，不把它当成新的 UL"
+}

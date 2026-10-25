@@ -1,0 +1,5 @@
+{
+  "description": "剥标记后新产生未闭合围栏",
+  "expect_exit": 1,
+  "skip_reason": "无。剥标记后整行变成未闭合围栏，结果未完成"
+}

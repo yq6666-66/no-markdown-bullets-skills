@@ -1,0 +1,5 @@
+{
+  "description": "剥后仍残留 UL",
+  "expect_exit": 1,
+  "skip_reason": "无。单次剥标记后重解析仍是 UL，判定失败，这段正文不算完成"
+}

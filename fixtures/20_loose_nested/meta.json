@@ -1,0 +1,5 @@
+{
+  "description": "空行后缩进仍小于 4 的 UL",
+  "expect_exit": 0,
+  "skip_reason": "无。空行之后缩进仍小于 4，仍是 UL，要剥"
+}

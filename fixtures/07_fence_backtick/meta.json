@@ -1,0 +1,5 @@
+{
+  "description": "闭合反引号围栏",
+  "expect_exit": 0,
+  "skip_reason": "闭合 ``` 围栏内的标记不剥"
+}

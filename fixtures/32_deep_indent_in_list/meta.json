@@ -1,0 +1,5 @@
+{
+  "description": "列表项内部相对缩进过大的行",
+  "expect_exit": 0,
+  "skip_reason": "相对父项内容列缩进大于等于 4，不当作新 UL，原样保留"
+}
