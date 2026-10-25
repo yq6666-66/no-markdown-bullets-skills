@@ -1,0 +1,5 @@
+{
+  "description": "B 黄金样例：嵌套与容器",
+  "expect_exit": 0,
+  "skip_reason": "无。UL 和任务框剥掉，有序列表、缩进代码保留。任务框不保留。内容来自 B 的 nesting 样例"
+}

@@ -1,0 +1,5 @@
+{
+  "description": "on 也必须带 reason",
+  "expect_exit": 2,
+  "skip_reason": "没有 reason 的 on 不结束区域。区域未闭合，保留到 EOF，退出码 2"
+}

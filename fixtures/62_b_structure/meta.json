@@ -1,0 +1,5 @@
+{
+  "description": "B 黄金样例：结构保留",
+  "expect_exit": 0,
+  "skip_reason": "无。有序列表、表格、分隔线、转义和行内强调保留，三个正文 UL 要剥。内容来自 B 的 structure 样例"
+}

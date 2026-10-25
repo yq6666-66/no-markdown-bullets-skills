@@ -1,0 +1,5 @@
+{
+  "description": "抑制区不嵌套",
+  "expect_exit": 0,
+  "skip_reason": "已开启时再次 off 不增加层数。第一个有效 on 结束整段。区外 UL 要剥"
+}

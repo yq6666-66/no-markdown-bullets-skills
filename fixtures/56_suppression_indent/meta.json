@@ -1,0 +1,5 @@
+{
+  "description": "三空格缩进的抑制指令",
+  "expect_exit": 0,
+  "skip_reason": "行首不超过 3 个空格的指令有效。区内不改写，区外 UL 要剥"
+}

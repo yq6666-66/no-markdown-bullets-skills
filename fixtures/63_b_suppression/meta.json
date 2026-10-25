@@ -1,0 +1,5 @@
+{
+  "description": "B 黄金样例：抑制",
+  "expect_exit": 2,
+  "skip_reason": "有效抑制区内不改写。无 reason 或空 reason 不开启。围栏内指令无效。最后一处未闭合，退出码 2。内容来自 B 的 suppression 样例"
+}

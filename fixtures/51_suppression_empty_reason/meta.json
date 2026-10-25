@@ -1,0 +1,5 @@
+{
+  "description": "空白 reason 不开启抑制",
+  "expect_exit": 0,
+  "skip_reason": "无。reason 去空白后必须非空"
+}

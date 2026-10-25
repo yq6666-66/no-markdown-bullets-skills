@@ -1,0 +1,5 @@
+{
+  "description": "围栏里的抑制指令无效",
+  "expect_exit": 0,
+  "skip_reason": "已开启的围栏优先。围栏内的指令不开启区域，围栏后的 UL 要剥"
+}

@@ -1,0 +1,5 @@
+{
+  "description": "缺少 reason 的 off 不开启抑制",
+  "expect_exit": 0,
+  "skip_reason": "无。reason 必填。无效指令不开启区域，后面的 UL 要剥"
+}

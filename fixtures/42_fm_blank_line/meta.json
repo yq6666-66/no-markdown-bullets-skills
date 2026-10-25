@@ -1,0 +1,5 @@
+{
+  "description": "front matter 中间有空行时不遮罩",
+  "expect_exit": 0,
+  "skip_reason": "空行使起始 --- 不再构成 front matter，正文里的 UL 要剥。闭合 --- 按分隔线保留"
+}
