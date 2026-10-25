@@ -1,0 +1,21 @@
+# CHANGELOG
+
+本文件只记录变更。用法见 `README.md`，约定见 `skills/no-markdown-bullets/SKILL.md`，安装见 `docs/install.md`。
+
+主工具是 `scripts/strip_md_ul.py`。退出码 `0` / `2` / `1` 的含义以 `docs/规则与边界.md` 为准。
+
+## Unreleased
+
+1. 在 v3.1 基线上补了 front matter 遮罩：TOML `+++`、空行作废、200 行窗口。YAML 仍可用 `---` 或 `...` 闭合。
+2. 引用变浅时，更深引用里没闭合的围栏随引用结束。引用深度变化时丢掉不属于当前层的列表帧，避免四格缩进被当成还开着的列表。
+3. 增加抑制区。范围内原样保留，不改写。`reason` 必填。不嵌套。未闭合退出码 `2`。front matter 和抑制区共用同一种区域标记。
+4. 增加 `--report`。JSON 只写到文件或 stderr，不进入 stdout。进程退出码仍是 `0` / `2` / `1`。
+5. 把并行检查器分支上的五份黄金样例改写成 `fixtures/59` 到 `fixtures/63` 的 input / expected / meta。
+6. 增加 `scripts/check_docx_numbering.py`。它只报告 docx 的 bullet 编号，退出码和剥除器不同。`python-docx` 只是可选测试依赖。
+7. 增加 `evals/`。CI 只做提示集的离线校验，不调用模型。
+8. 增加 `docs/install.md`，路径改为 `skills/no-markdown-bullets/` 和 `scripts/strip_md_ul.py`。
+9. CI 用 Python 3.10 和 3.12 跑单元测试。
+
+## 3.1.0
+
+`main` 上由 PR #1 交付的基线：`skills/no-markdown-bullets/SKILL.md`、`scripts/strip_md_ul.py`、`fixtures/` 和三份场景文档。该基线不再带旧的只读检查器。
