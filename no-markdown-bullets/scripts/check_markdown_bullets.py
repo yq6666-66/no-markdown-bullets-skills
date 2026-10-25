@@ -53,6 +53,10 @@ CODE_UNCLOSED = "unclosed-suppression"
 
 FILENAME_SUFFIX = ".md"
 
+# Membership sets used to reject a line before spending a regex on it.
+_BULLET_CHARS = frozenset("-+*")
+_DIGIT_CHARS = frozenset("0123456789")
+
 
 @dataclass(frozen=True)
 class Finding:
@@ -115,6 +119,9 @@ class _Totals:
 
 def _split_quote_prefix(line: str, limit: Optional[int] = None) -> tuple[int, str]:
     """Strip up to ``limit`` blockquote markers and return (depth, remainder)."""
+    if ">" not in line:
+        # Overwhelmingly the common case; avoids a regex attempt per line.
+        return 0, line
     depth = 0
     rest = line
     while limit is None or depth < limit:
@@ -153,6 +160,8 @@ def _is_thematic_break(content: str, marker: str) -> bool:
 def _opening_fence(rest: str, indent: int, has_active_list: bool) -> Optional[Fence]:
     """Return a fence if this line opens a fenced code block."""
     if indent > 3 and not has_active_list:
+        return None
+    if "`" not in rest and "~" not in rest:
         return None
     match = FENCE_RE.match(rest)
     if not match:
@@ -193,6 +202,9 @@ def _frontmatter_last_line(lines: Sequence[str]) -> int:
 
 def _parse_suppression_directive(content: str) -> Optional[_Directive]:
     """Parse a suppression comment, ignoring anything malformed."""
+    if not content.startswith("<!--"):
+        # Called for every content line, so reject non-comments immediately.
+        return None
     match = SUPPRESSION_RE.match(content)
     if not match:
         return None
@@ -230,6 +242,11 @@ class _BlockScanner:
         if self._fences and self._consume_fenced(raw_line, depth):
             return
 
+        if depth == 0 and len(self._list_indents) > 1:
+            # A top-level line closes any open blockquote, so indentation state
+            # recorded for deeper depths is stale.
+            self._drop_blockquote_lists()
+
         indent = _indent_width(rest)
         content = rest.lstrip(" \t")
         active_lists = self._list_indents.setdefault(depth, [])
@@ -253,8 +270,11 @@ class _BlockScanner:
             # At top level this is an indented code block, not a list.
             return
 
-        unordered = UNORDERED_RE.match(content)
-        ordered = ORDERED_RE.match(content)
+        head = content[0]
+        unordered = UNORDERED_RE.match(content) if head in _BULLET_CHARS else None
+        ordered = None
+        if unordered is None and head in _DIGIT_CHARS:
+            ordered = ORDERED_RE.match(content)
 
         if unordered:
             marker = unordered.group(1)
@@ -279,6 +299,10 @@ class _BlockScanner:
         if active_lists and indent == active_lists[-1]:
             return
         active_lists.append(indent)
+
+    def _drop_blockquote_lists(self) -> None:
+        for key in [key for key in self._list_indents if key]:
+            del self._list_indents[key]
 
     def _consume_fenced(self, raw_line: str, depth: int) -> bool:
         """Advance through an open fence; True means the line was consumed."""
