@@ -68,6 +68,7 @@ FILENAME_SUFFIX = ".md"
 # Membership sets used to reject a line before spending a regex on it.
 _BULLET_CHARS = frozenset("-+*")
 _DIGIT_CHARS = frozenset("0123456789")
+_FENCE_CHARS = frozenset("`~")
 
 
 @dataclass(frozen=True)
@@ -259,19 +260,22 @@ class _BlockScanner:
             # recorded for deeper depths is stale.
             self._drop_blockquote_lists()
 
-        indent = _indent_width(rest)
         content = rest.lstrip(" \t")
+        # Comparing lengths is cheaper than measuring the prefix, and most
+        # lines are unindented.
+        indent = 0 if len(content) == len(rest) else _indent_width(rest)
         active_lists = self._list_indents.setdefault(depth, [])
 
-        opening = _opening_fence(rest, indent, bool(active_lists))
-        if opening:
-            self._fences[depth] = opening
-            return
+        if content[:1] in _FENCE_CHARS:
+            opening = _opening_fence(rest, indent, bool(active_lists))
+            if opening:
+                self._fences[depth] = opening
+                return
 
         if not content:
             return
 
-        if self._handle_suppression(content, number):
+        if content[0] == "<" and self._handle_suppression(content, number):
             return
 
         if self._suppression_line is not None:
