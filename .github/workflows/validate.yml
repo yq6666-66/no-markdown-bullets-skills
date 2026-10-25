@@ -1,0 +1,28 @@
+name: validate
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Run unit tests
+        run: python -m unittest discover -s tests -v
+      - name: Check valid example
+        run: python no-markdown-bullets/scripts/check_markdown_bullets.py no-markdown-bullets/examples/good.md
+      - name: Check invalid example is rejected
+        shell: bash
+        run: |
+          if python no-markdown-bullets/scripts/check_markdown_bullets.py no-markdown-bullets/examples/bad.md; then
+            echo "bad.md was expected to fail validation"
+            exit 1
+          fi
