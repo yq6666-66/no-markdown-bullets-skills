@@ -17,6 +17,7 @@
 9. CI 用 Python 3.10 和 3.12 跑单元测试。
 10. 行首超过 3 列的抑制指令不再开启抑制区。四格空格见 `fixtures/69_suppression_four_space`，一个 Tab 同样无效。
 11. 核对模型正文的通过线加上「没有抑制区」。人工源文件仍可使用抑制区。脚本对抑制区的默认剥除不变。
+12. docs: README 与 docs/install.md 用法定调——把 Skill 交给 AI 自适配；Discovery / 列 Skill 不作门槛。不承诺宿主强制执行。
 
 ## 3.1.0
 

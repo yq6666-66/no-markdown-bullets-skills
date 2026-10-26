@@ -1,4 +1,3 @@
-
 # no-markdown-bullets
 
 去掉面向读者的正文里，由 Markdown 无序列表渲染出来的大黑点，并把这条约束做成可以复制的 Skill。
@@ -7,13 +6,17 @@
 
 ## 状态
 
-Skill、剥除脚本、fixtures、抑制区与 `--report` 都已经在本仓库里（含卫星 docx/evals）。下面说的「能用」只指这些文件，以及本仓库测试能够跑通。它不表示某个宿主已经强制执行或已发现这条 Skill；宿主发现与强制执行仍标「待验证」。
+Skill、剥除脚本、fixtures、抑制区与 `--report` 都已经在本仓库里（含卫星 docx/evals）。下面说的「能用」只指这些文件，以及本仓库测试能够跑通。
+
+**推荐用法**：把本仓库的 Skill（`skills/no-markdown-bullets/` 整目录，含 `SKILL.md`）交给对应 AI / 助手，由对方按 `SKILL.md` 自行适配并遵守约定。不以「宿主 Skill 列表截图 / 列出可见 Skill」为使用门槛；宿主发现实验已关闭，Discovery 不作门槛。文件放进目录 ≠ 宿主已加载 ≠ 模型一定遵守；本仓库**不承诺**宿主强制执行。
+
+说明：当前文档（README 与 `docs/install.md`）描述用法与安装；`skills/no-markdown-bullets/SKILL.md` 正文未改。
 
 | 部分 | 状态 |
 | --- | --- |
-| `skills/no-markdown-bullets/SKILL.md` | 已写入，可以手工复制到宿主 |
+| `skills/no-markdown-bullets/SKILL.md` | 已写入，可整目录交给 AI，也可手工复制到宿主 |
 | `scripts/strip_md_ul.py` 与 `fixtures/` | 已写入。验收以本仓库单元测试通过为准 |
-| 宿主发现与强制执行 | 待验证。放置路径写在下面，本仓库没有某次发现实验的记录 |
+| 推荐用法 / 使用门槛 | 把 Skill 交给对应 AI 自适配；Discovery / 列表截图不作门槛。不承诺宿主强制执行 |
 | 消除一切可见黑点 | 不承诺。黑点不一定是 `disc`，Word 还受粘贴方式影响 |
 
 `scripts/check_docx_numbering.py`、`evals/` 和 `python-docx` 是**卫星（可选，不进 Skill 验证主路径）**。可以留在仓库里，也可以手动用。主路径仍是 Skill 加 `scripts/strip_md_ul.py`。核对模型正文要同时看到 `--check` 退出码 `0`、`stripped=0`（或 `summary.stripped == 0`），以及 `summary.suppression_blocks == 0`（或正文无 `no-markdown-bullets:` 抑制注释）。
@@ -32,14 +35,14 @@ Skill、剥除脚本、fixtures、抑制区与 `--report` 都已经在本仓库�
 
 本仓库不做文风润色，不做浏览器或 Word 插件，也不发布 npm 命令行包。
 
-## 关键
+## 回答
 
 要禁的是无序列表语法，不是一切列表。编号列表和表格留下。围栏、缩进代码、成对且满足窗口条件的 YAML / TOML front matter、分隔线和行内 `*强调*` 留下。人工可以用抑制注释把一段标成不改写，见 `docs/规则与边界.md`。模型不要用这种注释把圆点藏进正文。
 
 三个场景的做法不同：
 
 1. GitHub：改源码结构，不改网站 CSS。
-2. 聊天：手工放置 Skill，生成时用段落或编号；必要时对模型输出全文跑脚本。
+2. 聊天：把 Skill 交给对应 AI 使用，生成时用段落或编号；必要时对模型输出全文跑脚本。
 3. Word / WPS：粘贴时只保留文本，或在软件里取消项目符号。
 
 正面要求优先于一句「不要用列表」。用户当次明确要求保留 bullet 时，这一次普通无序列表可以例外。任务列表不在例外里。细节见 `docs/规则与边界.md`。
@@ -50,19 +53,19 @@ Skill、剥除脚本、fixtures、抑制区与 `--report` 都已经在本仓库�
 
 ### 放置 Skill
 
-把目录 `skills/no-markdown-bullets/` 整份复制到宿主的 Skills 目录，其中要有 `SKILL.md`。分工具路径、更新、卸载和自测清单写在 `docs/install.md`。下面是 Cursor 和 Codex 的常见位置，发现结果仍是待验证。
+把目录 `skills/no-markdown-bullets/` 整份复制到宿主的 Skills 目录，其中要有 `SKILL.md`；也可以不依赖宿主目录，直接把该目录交给目标 AI，由它按 `SKILL.md` 自行适配。分工具路径、更新、卸载和自测清单写在 `docs/install.md`。下表是 Cursor 和 Codex 的常见放置位置，仅供参考；是否被宿主自动发现因工具而异，**不是**使用前提。
 
-| 宿主 | 路径 | 状态 |
+| 宿主 | 路径 | 说明 |
 | --- | --- | --- |
-| Cursor 项目 | `<项目>/.cursor/skills/no-markdown-bullets/SKILL.md` | 待验证 |
-| Cursor 用户目录 | `~/.cursor/skills/no-markdown-bullets/SKILL.md` | 待验证 |
-| Codex 项目 | `<项目>/.codex/skills/no-markdown-bullets/SKILL.md` | 待验证 |
-| Codex 用户目录 | `~/.codex/skills/no-markdown-bullets/SKILL.md` | 待验证 |
+| Cursor 项目 | `<项目>/.cursor/skills/no-markdown-bullets/SKILL.md` | 常见放置（路径示例） |
+| Cursor 用户目录 | `~/.cursor/skills/no-markdown-bullets/SKILL.md` | 常见放置（路径示例） |
+| Codex 项目 | `<项目>/.codex/skills/no-markdown-bullets/SKILL.md` | 常见放置（路径示例） |
+| Codex 用户目录 | `~/.codex/skills/no-markdown-bullets/SKILL.md` | 常见放置（路径示例） |
 
-放置之后：
+放置或交给 AI 之后：
 
-1. 新开对话，请宿主列出当前能发现的 Skill，确认有 `no-markdown-bullets`。
-2. 用 `docs/三场景实操.md` 里的固定提示词显式调用。
+1. 把 Skill 目录交给对应 AI，说明按 `SKILL.md` 约定生成；也可用 `docs/三场景实操.md` 里的固定提示词显式调用。
+2. （可选）新开对话后，可尝试请宿主列出当前能发现的 Skill。列不出也不妨碍使用。
 3. 把模型可见正文存成文件，执行 `python scripts/strip_md_ul.py --check --report - 输出.md`。通过线是退出码 `0`，报告里 `stripped=0`，并且 `summary.suppression_blocks` 为 `0`。不想看报告时，正文里也不能出现 `no-markdown-bullets:`。人工源文件仍可使用抑制区。
 
 ### 运行脚本
@@ -100,9 +103,10 @@ python scripts/strip_md_ul.py < input.md
 
 | 项 | 取值 |
 | --- | --- |
-| 宿主 | Cursor。路径见上，发现与强制执行待验证 |
-| 模型 | 待验证 |
-| 版本 | 待验证 |
+| 用法 | 把 Skill 交给对应 AI 自适配；Discovery / 列表截图不作门槛。不承诺宿主强制执行 |
+| 宿主路径 | Cursor 等路径见上表，仅为常见放置示例 |
+| 模型 | 不保证任意模型一定遵守；以正文通过线为准 |
+| 版本 | 以本仓库提交与 `CHANGELOG.md` 为准 |
 | 固定提示词 | 与 `docs/三场景实操.md` 文末三句相同，验收时不要改写 |
 | 计数 | 解析后的待剥 UL 节点数，不是截图里的圆点 |
 | 通过线 | 模型正文：`--check` 退出码 `0`，`stripped=0`，且没有抑制区（`--report` 的 `summary.suppression_blocks` 为 `0`，或正文无 `no-markdown-bullets:`）。人工源文件仍可使用抑制区 |
