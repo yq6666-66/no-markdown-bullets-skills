@@ -249,6 +249,161 @@ class CommandTests(unittest.TestCase):
             )
             self.assertEqual(directory_arg.returncode, 1)
 
+    def test_report_file_keeps_stdout_as_body(self):
+        with tempfile.TemporaryDirectory() as directory:
+            source = Path(directory) / "note.md"
+            report_path = Path(directory) / "report.json"
+            source.write_text("- item\n", encoding="utf-8")
+            proc = subprocess.run(
+                [
+                    sys.executable,
+                    str(SCRIPT),
+                    "--report",
+                    str(report_path),
+                    str(source),
+                ],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+            self.assertEqual(proc.returncode, 0)
+            self.assertEqual(proc.stdout, b"item\n")
+            self.assertNotIn(b"{", proc.stdout)
+            self.assertIn(b"info: stripped=1", proc.stderr)
+            payload = json.loads(report_path.read_text(encoding="utf-8"))
+            self.assertEqual(payload["tool"], "strip_md_ul")
+            self.assertEqual(payload["exit_code"], 0)
+            self.assertEqual(payload["stripped_lines"], [1])
+            self.assertNotIn("text", payload)
+            self.assertTrue(
+                any(item["code"] == "stripped" and item["exit_class"] == 0
+                    for item in payload["findings"])
+            )
+
+    def test_report_dash_is_stderr_json_only(self):
+        proc = subprocess.run(
+            [sys.executable, str(SCRIPT), "--check", "--report", "-"],
+            input='<!-- no-markdown-bullets: off reason="x" -->\n- hidden\n'.encode(
+                "utf-8"
+            ),
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            check=False,
+        )
+        self.assertEqual(proc.returncode, 2)
+        self.assertEqual(proc.stdout, b"")
+        payload = json.loads(proc.stderr.decode("utf-8"))
+        self.assertEqual(payload["exit_code"], 2)
+        self.assertEqual(payload["source"], "<stdin>")
+        codes = {item["code"]: item["exit_class"] for item in payload["findings"]}
+        self.assertEqual(codes["unclosed-suppression"], 2)
+        self.assertNotIn(b"info: stripped=", proc.stderr.splitlines()[0])
+
+    def test_report_failure_does_not_emit_stdout(self):
+        with tempfile.TemporaryDirectory() as directory:
+            blocked = Path(directory) / "blocked"
+            blocked.mkdir()
+            proc = subprocess.run(
+                [sys.executable, str(SCRIPT), "--report", str(blocked)],
+                input=b"- item\n",
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+            self.assertEqual(proc.returncode, 1)
+            self.assertEqual(proc.stdout, b"")
+            self.assertIn(b"error:", proc.stderr)
+
+
+class RegionTests(unittest.TestCase):
+    def test_four_space_directive_does_not_open_suppression(self):
+        text = '    <!-- no-markdown-bullets: off reason="x" -->\n- hidden\n'
+        result = strip_md_ul.strip_text(text)
+        self.assertEqual(result.suppression_blocks, 0)
+        self.assertEqual(result.regions, [])
+        self.assertEqual(result.stripped_lines, [2])
+        self.assertEqual(result.exit_code, 0)
+        self.assertNotIn("- hidden", result.text)
+
+        tabbed = strip_md_ul.strip_text(
+            '\t<!-- no-markdown-bullets: off reason="x" -->\n- hidden\n'
+        )
+        self.assertEqual(tabbed.suppression_blocks, 0)
+        self.assertEqual(tabbed.exit_code, 0)
+        self.assertIsNone(
+            strip_md_ul.match_directive(
+                '    <!-- no-markdown-bullets: off reason="x" -->'
+            )
+        )
+        self.assertIsNone(
+            strip_md_ul.match_directive(
+                '\t<!-- no-markdown-bullets: off reason="x" -->'
+            )
+        )
+        self.assertIsNotNone(
+            strip_md_ul.match_directive(
+                '   <!-- no-markdown-bullets: off reason="x" -->'
+            )
+        )
+
+    def test_front_matter_and_suppression_share_region_marker(self):
+        text = (
+            "---\n"
+            "title: x\n"
+            "---\n"
+            '<!-- no-markdown-bullets: off reason="keep" -->\n'
+            "- kept\n"
+            '<!-- no-markdown-bullets: on reason="done" -->\n'
+            "- gone\n"
+        )
+        result = strip_md_ul.strip_text(text)
+        self.assertEqual(
+            [region["kind"] for region in result.regions],
+            ["frontmatter", "suppression"],
+        )
+        self.assertTrue(all(region["closed"] for region in result.regions))
+        self.assertEqual(result.suppression_blocks, 1)
+        self.assertEqual(result.suppressed_lines, 1)
+        self.assertIn("- kept", result.text)
+        self.assertTrue(result.text.endswith("gone\n"))
+        self.assertEqual(result.exit_code, 0)
+
+    def test_report_exit_classes_follow_process_exit(self):
+        unclosed = strip_md_ul.strip_text(
+            '<!-- no-markdown-bullets: off reason="x" -->\n- hidden\n'
+        )
+        report = strip_md_ul.build_report(unclosed, "<memory>")
+        self.assertEqual(report["exit_code"], 2)
+        self.assertNotIn("text", report)
+        self.assertEqual(
+            {item["code"] for item in report["findings"]},
+            {"unclosed-suppression"},
+        )
+
+        residual = strip_md_ul.strip_text("- - still\n")
+        residual_report = strip_md_ul.build_report(residual, "<memory>")
+        self.assertEqual(residual_report["exit_code"], 1)
+        self.assertTrue(
+            any(
+                item["code"] == "residual-unordered-list" and item["exit_class"] == 1
+                for item in residual_report["findings"]
+            )
+        )
+
+    def test_ported_b_hit_lines_are_the_stripped_lines(self):
+        expected = {
+            "59_b_fences": [12, 22],
+            "60_b_frontmatter": [13, 19],
+            "61_b_nesting": [4, 5, 9, 11, 19, 23, 24, 29],
+            "62_b_structure": [33, 34, 35],
+            "63_b_suppression": [8, 11, 14],
+        }
+        for name, lines in expected.items():
+            with self.subTest(case=name):
+                text = (ROOT / "fixtures" / name / "input.md").read_text(encoding="utf-8")
+                result = strip_md_ul.strip_text(text)
+                self.assertEqual(result.stripped_lines, lines)
+
 
 class RepoTextTests(unittest.TestCase):
     def test_delivered_docs_have_no_strippable_ul(self):
@@ -257,6 +412,14 @@ class RepoTextTests(unittest.TestCase):
                 result = strip_md_ul.strip_text(path.read_text(encoding="utf-8"))
                 self.assertEqual(result.stripped_lines, [], result.diagnostics)
                 self.assertEqual(result.exit_code, 0, result.diagnostics)
+
+    def test_removed_checker_is_not_in_the_tree(self):
+        matches = [
+            path.relative_to(ROOT).as_posix()
+            for path in ROOT.rglob("check_markdown_bullets.py")
+            if ".git" not in path.parts
+        ]
+        self.assertEqual(matches, [])
 
     def test_license_is_mit(self):
         text = (ROOT / "LICENSE").read_text(encoding="utf-8")

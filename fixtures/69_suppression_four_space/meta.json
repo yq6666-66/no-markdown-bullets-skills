@@ -1,0 +1,5 @@
+{
+  "description": "四格缩进的抑制指令",
+  "expect_exit": 0,
+  "skip_reason": "行首四格是缩进代码，指令无效，不开启抑制区。后面的顶格 UL 要剥"
+}

@@ -1,0 +1,5 @@
+{
+  "description": "B 黄金样例：围栏",
+  "expect_exit": 0,
+  "skip_reason": "围栏内的列表标记不剥。围栏外的 UL 要剥。内容来自 feat/p0-p1-hardening 的 fences 样例"
+}

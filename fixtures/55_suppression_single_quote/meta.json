@@ -1,0 +1,5 @@
+{
+  "description": "单引号 reason",
+  "expect_exit": 0,
+  "skip_reason": "reason 可以用单引号。区内不改写，区外 UL 要剥"
+}

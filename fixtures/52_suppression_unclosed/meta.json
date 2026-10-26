@@ -1,0 +1,5 @@
+{
+  "description": "未闭合抑制区",
+  "expect_exit": 2,
+  "skip_reason": "未闭合抑制区一直保留到 EOF，不剥其中的 UL，退出码 2"
+}

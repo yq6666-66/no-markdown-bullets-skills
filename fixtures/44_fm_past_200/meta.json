@@ -1,0 +1,5 @@
+{
+  "description": "闭合标记超出 200 行窗口",
+  "expect_exit": 0,
+  "skip_reason": "开标记之后 200 行内没有闭合标记，整段不当作 front matter，内部和后面的 UL 都要剥"
+}

@@ -3,29 +3,44 @@
 
 块状态机顺序（方案 v3.1 §3.1），禁止对全文做天真逐行替换：
 
-1. 仅文件起始的 YAML front matter 整段跳过。
-2. 围栏 ``` / ~~~：记录字符与长度；CommonMark 不嵌套；未闭合则跳到 EOF 并在 stderr 告警。
+1. 文件起始的 front matter 整段不改写。YAML 用 ``---`` 开始，用 ``---`` 或 ``...``
+   结束；TOML 用 ``+++`` 开始并用同样的 ``+++`` 结束。中间不能有空行，闭合标记必须
+   出现在开标记之后的 200 行以内。否则不当作 front matter，避免吞掉正文列表。
+2. 抑制区与 front matter 共用同一种不改写区域。成对的
+   ``<!-- no-markdown-bullets: off reason="..." -->`` /
+   ``<!-- no-markdown-bullets: on reason="..." -->`` 之间原样保留。
+   ``reason`` 必填且去空白后非空。抑制区不嵌套。未闭合则保留到 EOF，退出码 2。
+   已开启的围栏、HTML 原始块、front matter、缩进代码里的指令无效。
+   行首只认 0 到 3 列；四格空格或一个 Tab 是缩进代码，不开启抑制区。
+3. 围栏 ``` / ~~~：记录字符与长度；CommonMark 不嵌套。引用深度变浅时，引用内的
+   围栏随引用结束，不把后面的正文算进代码。真正未闭合才跳到 EOF 并告警。
    容器内先剥掉引用前缀和列表内容缩进，再判断开闭。
-3. HTML 原始块整块不改。pre/script/style/textarea、注释、处理指令、声明、CDATA
+4. HTML 原始块整块不改。pre/script/style/textarea、注释、处理指令、声明、CDATA
    未闭合时跳到 EOF 并告警；块级标签直到空行（空行本身原样输出）。
-4. 表格整块不改，包含单元格里的 ``-``。
-5. 主题分隔线（``---`` / ``***`` / ``* * *`` / ``- - -`` / ``+ + +`` 以及下划线）先于 UL 识别。
-6. 列表紧邻续行优先于缩进代码。只有非列表上下文，且绝对缩进 ≥4 空格或 1 个 Tab，
-   才保护为缩进代码。空行中断紧邻续行。
-7. 其余 UL、空列表项、任务列表剥掉标记。任务框 ``[ ]`` / ``[x]`` / ``[X]`` 一并去掉，
+5. 表格整块不改，包含单元格里的 ``-``。
+6. 主题分隔线（``---`` / ``***`` / ``* * *`` / ``- - -`` / ``+ + +`` 以及下划线）先于 UL 识别。
+7. 列表紧邻续行优先于缩进代码。引用深度变化时，丢掉不属于当前引用层的列表帧：
+   进入更深引用会结束外侧列表，回到更浅处会结束深处的列表。
+   只有非列表上下文，且绝对缩进 ≥4 空格或 1 个 Tab，才保护为缩进代码。空行中断紧邻续行。
+8. 其余 UL、空列表项、任务列表剥掉标记。任务框 ``[ ]`` / ``[x]`` / ``[X]`` 一并去掉，
    不宣称保留勾选。
 
 剥完后用同一套规则重解析。结果里仍有待剥 UL，或剥完后新产生跳过区，退出码 1。
-有跳过且结果没有残留 UL，退出码 2。否则退出码 0。正文幂等：退出码 0 时再跑一次正文不变。
+有跳过且结果没有残留 UL，退出码 2。否则退出码 0。正文幂等：退出码 0 或 2 时再跑一次正文不变。
+
+JSON 报告只走 ``--report`` 文件或 stderr，不写进 stdout。
 """
 
 from __future__ import annotations
 
 import argparse
+import json
 import re
 import sys
 from dataclasses import dataclass, field
 from pathlib import Path
+
+__version__ = "3.1.0"
 
 
 UL_MARKERS = "-*+"
@@ -101,9 +116,12 @@ BLOCK_TAGS = sorted(
 )
 
 QUOTE_RE = re.compile(r"^ {0,3}> ?")
-FM_OPEN_RE = re.compile(r"^---[ \t]*$")
-FM_CLOSE_RE = re.compile(r"^(?:---|\.\.\.)[ \t]*$")
 OL_RE = re.compile(r"^(\d{1,9}[.)])(.*)$")
+FRONTMATTER_MAX_LINES = 200
+SUPPRESSION_RE = re.compile(
+    r"^<!--\s*no-markdown-bullets:\s*(off|on)\b(.*?)-->\s*$"
+)
+SUPPRESSION_REASON_RE = re.compile(r"""reason\s*=\s*("[^"]*"|'[^']*')""")
 FENCE_OPEN_RE = re.compile(r"^(`{3,}|~{3,})(.*)$")
 HTML_TYPE1_RE = re.compile(r"^<(pre|script|style|textarea)(?:[\s>]|$)", re.IGNORECASE)
 HTML_TYPE6_RE = re.compile(
@@ -140,10 +158,39 @@ class HtmlState:
 
 
 @dataclass
+class Region:
+    """一段不改写区域。front matter 与抑制区共用这个标记。"""
+
+    kind: str
+    start_line: int
+    end_line: int | None
+    reason: str = ""
+    closed: bool = True
+
+    def as_dict(self) -> dict[str, object]:
+        return {
+            "kind": self.kind,
+            "start_line": self.start_line,
+            "end_line": self.end_line,
+            "reason": self.reason,
+            "closed": self.closed,
+        }
+
+
+@dataclass
+class _Directive:
+    action: str
+    reason: str
+
+
+@dataclass
 class RunData:
     text: str
     stripped_lines: list[int] = field(default_factory=list)
     warnings: list[str] = field(default_factory=list)
+    regions: list[dict[str, object]] = field(default_factory=list)
+    suppressed_lines: int = 0
+    suppression_blocks: int = 0
 
 
 @dataclass
@@ -155,6 +202,9 @@ class StripResult:
     diagnostics: list[str]
     stripped_lines: list[int]
     warnings: list[str]
+    regions: list[dict[str, object]] = field(default_factory=list)
+    suppressed_lines: int = 0
+    suppression_blocks: int = 0
 
 
 def split_keep_ends(text: str) -> list[tuple[str, str]]:
@@ -381,14 +431,55 @@ def is_delimiter_row(rest: str) -> bool:
     return all(DELIM_CELL_RE.fullmatch(cell) is not None for cell in cells)
 
 
+def _front_matter_token(body: str) -> str:
+    return body.rstrip(" \t")
+
+
 def front_matter_span(lines: list[tuple[str, str]]) -> int:
-    """返回 front matter 占用的行数。起始 ``---`` 没有闭合时返回 0。"""
-    if not lines or FM_OPEN_RE.match(lines[0][0]) is None:
+    """返回 front matter 占用的行数。不能安全判定时返回 0。
+
+    开标记必须是文件第一行的 ``---``（YAML）或 ``+++``（TOML）。
+    YAML 可以用 ``---`` 或 ``...`` 闭合，TOML 只能用同样的 ``+++``。
+    中间出现空行，或闭合标记不在开标记之后的 200 行以内，就整段放弃。
+    """
+    if not lines:
         return 0
-    for index in range(1, len(lines)):
-        if FM_CLOSE_RE.match(lines[index][0]):
+    opening = _front_matter_token(lines[0][0])
+    if opening not in ("---", "+++"):
+        return 0
+    limit = min(len(lines), FRONTMATTER_MAX_LINES + 1)
+    for index in range(1, limit):
+        token = _front_matter_token(lines[index][0])
+        if token == "":
+            return 0
+        if opening == "---" and token in ("---", "..."):
+            return index + 1
+        if token == opening:
             return index + 1
     return 0
+
+
+def match_directive(body: str) -> _Directive | None:
+    """识别抑制指令。不是指令时返回 None；reason 缺失时 ``reason`` 为空串。
+
+    引用前缀先剥掉。剩下的行首按列计，超过 3 列（四格空格或一个 Tab）
+    是缩进代码，不当指令。
+    """
+    _prefix, rest, _depth = peel_quotes(body)
+    cols, index = measure_indent(rest)
+    if cols > 3:
+        return None
+    content = rest[index:]
+    if not content.startswith("<!--"):
+        return None
+    match = SUPPRESSION_RE.match(content)
+    if match is None:
+        return None
+    reason_match = SUPPRESSION_REASON_RE.search(match.group(2) or "")
+    reason = ""
+    if reason_match is not None:
+        reason = reason_match.group(1)[1:-1].strip()
+    return _Directive(match.group(1), reason)
 
 
 class _Parser:
@@ -402,9 +493,15 @@ class _Parser:
         self.in_code = False
         self.fence: FenceState | None = None
         self.html: HtmlState | None = None
+        self.regions: list[Region] = []
+        self.hold: Region | None = None
+        self.suppressed_lines = 0
+        self.suppression_blocks = 0
 
     def run(self) -> RunData:
         start = front_matter_span(self.lines)
+        if start:
+            self.regions.append(Region("frontmatter", 1, start, "", True))
         self.out.extend(self.lines[:start])
         index = start
         while index < len(self.lines):
@@ -419,18 +516,34 @@ class _Parser:
                 "warning: unclosed html block at line "
                 f"{self.html.start_line}; skipping through EOF"
             )
-        return RunData(join_lines(self.out), self.stripped_lines, self.warnings)
+        if self.hold is not None:
+            self.warnings.append(
+                "warning: unclosed suppression at line "
+                f"{self.hold.start_line}; keeping through EOF"
+            )
+        return RunData(
+            join_lines(self.out),
+            self.stripped_lines,
+            self.warnings,
+            [region.as_dict() for region in self.regions],
+            self.suppressed_lines,
+            self.suppression_blocks,
+        )
 
     def _step(self, index: int) -> int:
         body, _ending = self.lines[index]
         if self.fence is not None:
             _prefix, rest, quote_depth = peel_quotes(body)
-            if quote_depth == self.fence.quote_depth:
-                _taken, rel = take_columns(rest, self.fence.base_indent)
-                if match_fence_close(rel, self.fence.char, self.fence.length):
-                    self.fence = None
-            self.out.append(self.lines[index])
-            return index + 1
+            if quote_depth < self.fence.quote_depth:
+                # 引用结束时，里面没闭合的围栏也结束，当前行重新按正文处理。
+                self.fence = None
+            else:
+                if quote_depth == self.fence.quote_depth:
+                    _taken, rel = take_columns(rest, self.fence.base_indent)
+                    if match_fence_close(rel, self.fence.char, self.fence.length):
+                        self.fence = None
+                self.out.append(self.lines[index])
+                return index + 1
 
         if self.html is not None:
             self.out.append(self.lines[index])
@@ -443,6 +556,10 @@ class _Parser:
                 self.html = None
             return index + 1
 
+        if self.hold is not None:
+            self._hold_suppression(index, body)
+            return index + 1
+
         if body.strip(" \t") == "":
             self.out.append(self.lines[index])
             self.tight = False
@@ -451,15 +568,17 @@ class _Parser:
                 self.in_code = False
             return index + 1
 
-        if self.in_code:
-            _prefix, rest, _quote_depth = peel_quotes(body)
-            cols, _indent_end = measure_indent(rest)
-            if cols >= 4:
-                self.out.append(self.lines[index])
-                return index + 1
-            self.in_code = False
-
         prefix, rest, quote_depth = peel_quotes(body)
+        self._sync_quote_lists(quote_depth)
+        cols, _indent_end = measure_indent(rest)
+        if self.in_code and cols >= 4:
+            self.out.append(self.lines[index])
+            return index + 1
+        if self.in_code:
+            self.in_code = False
+        if self._try_open_suppression(index, body):
+            return index + 1
+
         if self._try_table(index):
             return self._table_end
 
@@ -483,6 +602,50 @@ class _Parser:
 
         self._handle_line(index, prefix, rest, quote_depth, cols, indent_end)
         return index + 1
+
+    def _sync_quote_lists(self, quote_depth: int) -> None:
+        """丢掉不属于当前引用层的列表帧。
+
+        进入更深的引用时，外侧列表结束。回到更浅处时，深处的列表结束。
+        同一层的嵌套列表保留。
+        """
+        if not self.stack:
+            return
+        if all(frame.quote_depth == quote_depth for frame in self.stack):
+            return
+        self.stack = [
+            frame for frame in self.stack if frame.quote_depth == quote_depth
+        ]
+        if not self.stack:
+            self.tight = False
+
+    def _try_open_suppression(self, index: int, body: str) -> bool:
+        directive = match_directive(body)
+        if directive is None or directive.action != "off" or not directive.reason:
+            return False
+        region = Region("suppression", index + 1, None, directive.reason, False)
+        self.regions.append(region)
+        self.hold = region
+        self.suppression_blocks += 1
+        self.in_code = False
+        self.out.append(self.lines[index])
+        return True
+
+    def _hold_suppression(self, index: int, body: str) -> None:
+        """抑制区内原样抄写。只有带非空 reason 的 on 能结束，不增加嵌套层。"""
+        directive = match_directive(body)
+        if (
+            self.hold is not None
+            and directive is not None
+            and directive.action == "on"
+            and directive.reason
+        ):
+            self.hold.end_line = index + 1
+            self.hold.closed = True
+            self.hold = None
+        else:
+            self.suppressed_lines += 1
+        self.out.append(self.lines[index])
 
     def _next_nonblank_is_code(self, start: int) -> bool:
         index = start
@@ -678,7 +841,55 @@ def strip_text(text: str) -> StripResult:
         diagnostics=diagnostics,
         stripped_lines=list(first.stripped_lines),
         warnings=list(first.warnings),
+        regions=list(first.regions),
+        suppressed_lines=first.suppressed_lines,
+        suppression_blocks=first.suppression_blocks,
     )
+
+
+def _classify_diagnostic(line: str) -> tuple[str | None, int, int | None]:
+    match = re.search(r"line (\d+)", line)
+    line_no = int(match.group(1)) if match else None
+    if "unclosed suppression" in line:
+        return "unclosed-suppression", 2, line_no
+    if "unclosed fence" in line:
+        return "unclosed-fence", 2, line_no
+    if "unclosed html" in line:
+        return "unclosed-html", 2, line_no
+    if "residual unordered list" in line:
+        return "residual-unordered-list", 1, line_no
+    if "created a skipped region" in line:
+        return "created-skip", 1, line_no
+    return None, 0, None
+
+
+def build_report(result: StripResult, source: str) -> dict[str, object]:
+    """机读报告。调用方必须把它写到文件或 stderr，不能写到 stdout。"""
+    findings: list[dict[str, object]] = []
+    for line_no in result.stripped_lines:
+        findings.append({"line": line_no, "code": "stripped", "exit_class": 0})
+    for line in result.diagnostics:
+        code, exit_class, found = _classify_diagnostic(line)
+        if code is None:
+            continue
+        findings.append({"line": found, "code": code, "exit_class": exit_class})
+    return {
+        "tool": "strip_md_ul",
+        "version": __version__,
+        "source": source,
+        "exit_code": result.exit_code,
+        "stripped_lines": list(result.stripped_lines),
+        "warnings": list(result.warnings),
+        "diagnostics": list(result.diagnostics),
+        "regions": list(result.regions),
+        "summary": {
+            "exit_code": result.exit_code,
+            "stripped": len(result.stripped_lines),
+            "suppression_blocks": result.suppression_blocks,
+            "suppressed_lines": result.suppressed_lines,
+        },
+        "findings": findings,
+    }
 
 
 class _ArgumentParser(argparse.ArgumentParser):
@@ -710,6 +921,7 @@ def main(argv: list[str] | None = None) -> int:
         description=(
             "剥除 Markdown 无序列表标记，结果写到 stdout，不修改源文件。"
             "退出码 0=结果无残留 UL，2=有跳过，1=失败。"
+            "JSON 只通过 --report 写出，不进入 stdout。"
         ),
     )
     parser.add_argument(
@@ -727,6 +939,14 @@ def main(argv: list[str] | None = None) -> int:
         action="store_true",
         help="把改写结果写到 stdout，并在 stderr 标明未修改源文件",
     )
+    parser.add_argument(
+        "--report",
+        metavar="PATH",
+        help=(
+            "把 JSON 报告写到 PATH。PATH 为 - 时写到 stderr，"
+            "并且不再混入人类可读诊断。绝不写到 stdout。"
+        ),
+    )
     args = parser.parse_args(argv)
     if args.check and args.dry_run:
         print("error: --check 与 --dry-run 不能同时使用", file=sys.stderr)
@@ -739,8 +959,25 @@ def main(argv: list[str] | None = None) -> int:
     result = strip_text(text)
     if args.dry_run:
         result.diagnostics.append("info: dry-run source-not-modified")
-    for line in result.diagnostics:
-        print(line, file=sys.stderr)
+    source = "<stdin>" if args.path is None or args.path == "-" else args.path
+    if args.report is not None:
+        payload = (
+            json.dumps(build_report(result, source), ensure_ascii=False, indent=2)
+            + "\n"
+        ).encode("utf-8")
+        if args.report == "-":
+            sys.stderr.buffer.write(payload)
+        else:
+            try:
+                Path(args.report).write_bytes(payload)
+            except OSError as exc:
+                print(f"error: {args.report}: {exc}", file=sys.stderr)
+                return 1
+            for line in result.diagnostics:
+                print(line, file=sys.stderr)
+    else:
+        for line in result.diagnostics:
+            print(line, file=sys.stderr)
     if not args.check:
         sys.stdout.buffer.write(result.text.encode("utf-8"))
     return result.exit_code

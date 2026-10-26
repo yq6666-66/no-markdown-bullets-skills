@@ -1,0 +1,5 @@
+{
+  "description": "YAML front matter 用 ... 闭合",
+  "expect_exit": 0,
+  "skip_reason": "YAML 仍可用 ... 闭合。这是既有规则，不因为 TOML 必须同标记闭合而取消"
+}

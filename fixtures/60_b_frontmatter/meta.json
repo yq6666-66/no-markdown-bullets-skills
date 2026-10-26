@@ -1,0 +1,5 @@
+{
+  "description": "B 黄金样例：front matter",
+  "expect_exit": 0,
+  "skip_reason": "闭合 YAML 头部里的列表不剥。正文和后一个分隔线之后的 UL 要剥。内容来自 B 的 frontmatter 样例"
+}

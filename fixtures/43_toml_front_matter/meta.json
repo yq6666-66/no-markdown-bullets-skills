@@ -1,0 +1,5 @@
+{
+  "description": "闭合的 TOML front matter",
+  "expect_exit": 0,
+  "skip_reason": "文件起始且在 200 行内闭合的 +++ 整段不改写，其中的列表不剥；后面的正文 UL 要剥"
+}

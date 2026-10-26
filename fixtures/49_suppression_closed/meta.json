@@ -1,0 +1,5 @@
+{
+  "description": "闭合抑制区保持原文",
+  "expect_exit": 0,
+  "skip_reason": "带非空 reason 的 off/on 之间不改写。区外 UL 要剥"
+}
