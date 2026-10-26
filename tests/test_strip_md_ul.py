@@ -316,6 +316,36 @@ class CommandTests(unittest.TestCase):
 
 
 class RegionTests(unittest.TestCase):
+    def test_four_space_directive_does_not_open_suppression(self):
+        text = '    <!-- no-markdown-bullets: off reason="x" -->\n- hidden\n'
+        result = strip_md_ul.strip_text(text)
+        self.assertEqual(result.suppression_blocks, 0)
+        self.assertEqual(result.regions, [])
+        self.assertEqual(result.stripped_lines, [2])
+        self.assertEqual(result.exit_code, 0)
+        self.assertNotIn("- hidden", result.text)
+
+        tabbed = strip_md_ul.strip_text(
+            '\t<!-- no-markdown-bullets: off reason="x" -->\n- hidden\n'
+        )
+        self.assertEqual(tabbed.suppression_blocks, 0)
+        self.assertEqual(tabbed.exit_code, 0)
+        self.assertIsNone(
+            strip_md_ul.match_directive(
+                '    <!-- no-markdown-bullets: off reason="x" -->'
+            )
+        )
+        self.assertIsNone(
+            strip_md_ul.match_directive(
+                '\t<!-- no-markdown-bullets: off reason="x" -->'
+            )
+        )
+        self.assertIsNotNone(
+            strip_md_ul.match_directive(
+                '   <!-- no-markdown-bullets: off reason="x" -->'
+            )
+        )
+
     def test_front_matter_and_suppression_share_region_marker(self):
         text = (
             "---\n"

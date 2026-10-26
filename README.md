@@ -15,7 +15,7 @@ M0 文档和 M1 的 Skill、剥除脚本、fixtures 都已经在本仓库里。�
 | 宿主发现与强制执行 | 待验证。放置路径写在下面，本仓库没有某次发现实验的记录 |
 | 消除一切可见黑点 | 不承诺。黑点不一定是 `disc`，Word 还受粘贴方式影响 |
 
-`scripts/check_docx_numbering.py` 和 `evals/` 是**卫星（可选）**。可以留在仓库里，也可以手动用，**不**计入「Skill 已可用 / 宿主验证」门槛。主路径仍是 Skill 加 `scripts/strip_md_ul.py`。验证钉死 `--check`，且 stderr 或 `--report` 含 `stripped=0`。
+`scripts/check_docx_numbering.py`、`evals/` 和 `python-docx` 是**卫星（可选，不进 Skill 验证主路径）**。可以留在仓库里，也可以手动用。主路径仍是 Skill 加 `scripts/strip_md_ul.py`。核对模型正文要同时看到 `--check` 退出码 `0`、`stripped=0`，以及没有抑制区。
 
 一次输出里没有黑点，不能证明 Skill 已经被加载。
 
@@ -62,7 +62,7 @@ M0 文档和 M1 的 Skill、剥除脚本、fixtures 都已经在本仓库里。�
 
 1. 新开对话，请宿主列出当前能发现的 Skill，确认有 `no-markdown-bullets`。
 2. 用 `docs/三场景实操.md` 里的固定提示词显式调用。
-3. 把模型可见正文存成文件，执行 `python scripts/strip_md_ul.py --check 输出.md`。通过线是退出码 `0`，且 stderr 或 `--report` 含 `stripped=0`。
+3. 把模型可见正文存成文件，执行 `python scripts/strip_md_ul.py --check --report - 输出.md`。通过线是退出码 `0`，报告里 `stripped=0`，并且 `summary.suppression_blocks` 为 `0`。不想看报告时，正文里也不能出现 `no-markdown-bullets:`。人工源文件仍可使用抑制区。
 
 ### 运行脚本
 
@@ -81,9 +81,9 @@ python scripts/strip_md_ul.py < input.md
 
 `--report PATH` 把 JSON 写到文件。`--report -` 把 JSON 写到 stderr，并且不再混入人类可读诊断。JSON 不进入 stdout，退出码也不因为加了报告而改变。
 
-已经是 `.docx` 的文件不要用剥除器硬改。卫星工具 `python scripts/check_docx_numbering.py 文件.docx` 只报告 bullet 编号，退出码 `1` 表示发现了编号，和剥除器的 `1`（失败）不是一回事。它不计入「Skill 已可用 / 宿主验证」门槛。
+已经是 `.docx` 的文件不要用剥除器硬改。`python scripts/check_docx_numbering.py 文件.docx` 只报告 bullet 编号，退出码 `1` 表示发现了编号，和剥除器的 `1`（失败）不是一回事。它和 `python-docx` 都是**卫星（可选，不进 Skill 验证主路径）**。
 
-`evals/` 也是卫星，用来手动对照模型输出。CI 不调用模型，只检查提示集。见 `evals/README.md`。
+`evals/` 也是**卫星（可选，不进 Skill 验证主路径）**，用来手动对照模型输出。CI 不调用模型，只检查提示集。见 `evals/README.md`。
 
 | 退出码 | 含义 |
 | --- | --- |
@@ -104,7 +104,7 @@ python scripts/strip_md_ul.py < input.md
 | 版本 | 待验证 |
 | 固定提示词 | 与 `docs/三场景实操.md` 文末三句相同，验收时不要改写 |
 | 计数 | 解析后的待剥 UL 节点数，不是截图里的圆点 |
-| 通过线 | `python scripts/strip_md_ul.py --check 输出.md` 的退出码为 `0`，且 stderr 或 `--report` 含 `stripped=0` |
+| 通过线 | 模型正文：`--check` 退出码 `0`，`stripped=0`，且没有抑制区（`--report` 的 `summary.suppression_blocks` 为 `0`，或正文无 `no-markdown-bullets:`）。人工源文件仍可使用抑制区 |
 | 不计入 | 围栏、front matter、抑制区、表格、缩进代码内部的标记 |
 | 上限 | 不承诺任意助手或任意模型达到 100% |
 
@@ -133,7 +133,7 @@ fixtures/
 tests/
 ```
 
-`scripts/check_docx_numbering.py` 和 `evals/` 是**卫星（可选）**：可进仓库、可手动用，**不**计入「Skill 已可用 / 宿主验证」门槛。主路径仍是 Skill 加 `scripts/strip_md_ul.py`。验证钉死 `--check`，且 stderr 或 `--report` 含 `stripped=0`。
+`scripts/check_docx_numbering.py`、`evals/` 和 `python-docx` 是**卫星（可选，不进 Skill 验证主路径）**。可进仓库、可手动用。主路径仍是 Skill 加 `scripts/strip_md_ul.py`。
 
 给后续集成的接口、依赖和调用方式写在 `INTEGRATION.md`。
 
@@ -145,7 +145,7 @@ tests/
 python -m unittest discover -s tests -v
 ```
 
-测试会核对每个 fixture 的输入、预期和退出码，检查幂等、CRLF、标准输出不覆盖源文件，并确认本仓库交付文档自身没有待剥 UL。CI 在 Python 3.10 和 3.12 上跑同一条命令，并安装可选的 `python-docx` 以执行 docx 真实文档测试。没装这个包时，那一组测试跳过，其余测试仍须通过。CI 另外执行 `python evals/run_eval.py --dry-run`，不调用模型。docx 真实文档测试和这条 dry-run 都是卫星，不改变 Skill 门槛。
+测试会核对每个 fixture 的输入、预期和退出码，检查幂等、CRLF、标准输出不覆盖源文件，并确认本仓库交付文档自身没有待剥 UL。CI 在 Python 3.10 和 3.12 上跑同一条命令，并安装可选的 `python-docx` 以执行 docx 真实文档测试。没装这个包时，那一组测试跳过，其余测试仍须通过。CI 另外执行 `python evals/run_eval.py --dry-run`，不调用模型。docx 检查器、`evals/` 和 `python-docx` 都是**卫星（可选，不进 Skill 验证主路径）**。
 
 ## 许可
 

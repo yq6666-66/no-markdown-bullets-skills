@@ -10,7 +10,7 @@
 2. 把仓库里的 `skills/no-markdown-bullets/` 整个目录复制到该位置。目录里要有 `SKILL.md`。
 3. 重新打开目标工具，或新开一段会话。
 4. 在本仓库根目录执行 `python scripts/strip_md_ul.py --check fixtures/02_ordered/input.md`。退出码应当是 `0`，stderr 里应当有 `stripped=0`。加了 `--report` 时，报告里同样要有 `stripped=0`。
-5. 用 `docs/三场景实操.md` 文末的固定提示词做一次真实输出，再对存下来的正文跑同一条 `--check`。通过线同样是退出码 `0`，且 stderr 或 `--report` 含 `stripped=0`。
+5. 用 `docs/三场景实操.md` 文末的固定提示词做一次真实输出，再对存下来的模型正文跑 `--check`。通过线是退出码 `0`、`stripped=0`，且没有抑制区。人工源文件仍可使用抑制区，第 4 步的样例只检查脚本。
 
 ## 安装包和脚本不是同一个目录
 
@@ -21,7 +21,7 @@ skills/no-markdown-bullets/
   SKILL.md
 ```
 
-两个脚本都留在本仓库，不放进 Skill 目录。其中 `scripts/check_docx_numbering.py` 是**卫星（可选）**，不跟着 Skill 复制，也不算安装门槛。
+两个脚本都留在本仓库，不放进 Skill 目录。其中 `scripts/check_docx_numbering.py` 是**卫星（可选，不进 Skill 验证主路径）**，不跟着 Skill 复制。
 
 ```text
 scripts/strip_md_ul.py
@@ -108,13 +108,13 @@ python scripts/strip_md_ul.py < input.md
 
 抑制区用来让一段原文保持不改写。`reason` 必填。写法、嵌套规则和未闭合时的退出码 `2` 见 `docs/规则与边界.md`。这是给人编辑源文件用的，不是让模型用注释把圆点藏起来。
 
-## 卫星（可选）
+## 卫星（可选，不进 Skill 验证主路径）
 
-`scripts/check_docx_numbering.py` 和 `evals/` 是**卫星（可选）**。可进仓库、可手动用，**不**计入「Skill 已可用 / 宿主验证」门槛。主路径仍是 Skill 加 `scripts/strip_md_ul.py`。验证钉死 `--check`，且 stderr 或 `--report` 含 `stripped=0`。Skill 复制路径不变，仍是 `skills/no-markdown-bullets/`。
+`scripts/check_docx_numbering.py`、`evals/` 和 `python-docx` 是**卫星（可选，不进 Skill 验证主路径）**。可进仓库、可手动用。主路径仍是 Skill 加 `scripts/strip_md_ul.py`。Skill 复制路径不变，仍是 `skills/no-markdown-bullets/`。核对模型正文的通过线见「首次使用自测」。人工源文件仍可使用抑制区。
 
 ## Word 文件
 
-这一节是卫星。`scripts/check_docx_numbering.py` 只报告 `.docx` 里解析成 bullet 的段落，不改写文件，也不处理 Markdown。它的退出码和剥除器不同，不要混用。
+这一节是**卫星（可选，不进 Skill 验证主路径）**。`scripts/check_docx_numbering.py` 只报告 `.docx` 里解析成 bullet 的段落，不改写文件，也不处理 Markdown。它的退出码和剥除器不同，不要混用。
 
 | 退出码 | 含义 |
 | --- | --- |
@@ -127,19 +127,19 @@ python scripts/check_docx_numbering.py report.docx
 python scripts/check_docx_numbering.py --format json report.docx
 ```
 
-运行它只用标准库。`python-docx` 不是运行依赖，只在可选测试里用来生成一份真实文档。没装它时，那一组测试会跳过，其余测试仍然要过。
+运行它只用标准库。`python-docx` 同样是**卫星（可选，不进 Skill 验证主路径）**，不是运行依赖，只在可选测试里用来生成一份真实文档。没装它时，那一组测试会跳过，其余测试仍然要过。
 
 ## 度量
 
-这一节是卫星。`evals/` 用来对照模型有没有少写无序列表。默认 CI 只检查提示集结构，执行 `python evals/run_eval.py --dry-run`，不调用模型。手动跑法和指标见 `evals/README.md`。跑不跑 eval，都不改变上面的安装门槛。
+这一节是**卫星（可选，不进 Skill 验证主路径）**。`evals/` 用来对照模型有没有少写无序列表。默认 CI 只检查提示集结构，执行 `python evals/run_eval.py --dry-run`，不调用模型。手动跑法和指标见 `evals/README.md`。
 
 ## 首次使用自测
 
 1. 让工具写一段连续叙述，看它是不是用了段落。
 2. 让工具写一个三步操作，看步骤是不是编号列表。
 3. 让工具做一组同构对照，看它是不是用了表格。聊天不支持表格时，应改成编号列表。
-4. 把输出存成 Markdown，跑 `python scripts/strip_md_ul.py --check 输出.md`。通过线是退出码 `0`，且 stderr 或 `--report` 含 `stripped=0`。
-5. 任何一步不对，先查安装位置和会话有没有重开，再重做。不要把退出码 `0` 但 `stripped` 大于 0 当成源文件已经干净。
+4. 把模型可见正文存成 Markdown，跑 `python scripts/strip_md_ul.py --check --report - 输出.md`。通过线是退出码 `0`，报告里 `stripped=0`，并且 `summary.suppression_blocks` 为 `0`。不想看报告时，正文里也不能出现 `no-markdown-bullets:`。人工写的源文件仍可使用抑制区，脚本不会因此改变默认剥除。
+5. 任何一步不对，先查安装位置和会话有没有重开，再重做。不要把退出码 `0` 但 `stripped` 大于 0 当成源文件已经干净。模型正文里若用抑制注释藏列表，`stripped=0` 也不算通过。
 
 ## 故障排查
 
@@ -167,7 +167,7 @@ python scripts/check_docx_numbering.py --format json report.docx
 2. 装中：目录里有 `SKILL.md`。
 3. 装后：新开了会话；若宿主能列 Skill，名单里有 `no-markdown-bullets`，否则标待验证。
 4. 脚本：`fixtures/02_ordered/input.md` 的 `--check` 是退出码 `0`，且 stderr 或 `--report` 含 `stripped=0`。
-5. 首次输出：段落、编号、表格都看过，存下来的正文通过同一条通过线。
+5. 首次输出：段落、编号、表格都看过。存下来的模型正文要退出码 `0`、`stripped=0`，且没有抑制区。第 4 条只是脚本自测。
 
 ## 命令速查
 
@@ -178,6 +178,7 @@ python scripts/check_docx_numbering.py --format json report.docx
 | 只判定、不打印正文 | `python scripts/strip_md_ul.py --check input.md` |
 | JSON 报告写到文件 | `python scripts/strip_md_ul.py --report report.json input.md` |
 | JSON 报告写到 stderr | `python scripts/strip_md_ul.py --report - --check input.md` |
+| 核对模型正文 | `python scripts/strip_md_ul.py --check --report - 输出.md` |
 | 检查 docx 的 bullet 编号 | `python scripts/check_docx_numbering.py report.docx` |
 | 离线查看 eval 提示集 | `python evals/run_eval.py --dry-run` |
 | 跑全部单元测试 | `python -m unittest discover -s tests -v` |

@@ -11,6 +11,7 @@
    ``<!-- no-markdown-bullets: on reason="..." -->`` 之间原样保留。
    ``reason`` 必填且去空白后非空。抑制区不嵌套。未闭合则保留到 EOF，退出码 2。
    已开启的围栏、HTML 原始块、front matter、缩进代码里的指令无效。
+   行首只认 0 到 3 列；四格空格或一个 Tab 是缩进代码，不开启抑制区。
 3. 围栏 ``` / ~~~：记录字符与长度；CommonMark 不嵌套。引用深度变浅时，引用内的
    围栏随引用结束，不把后面的正文算进代码。真正未闭合才跳到 EOF 并告警。
    容器内先剥掉引用前缀和列表内容缩进，再判断开闭。
@@ -459,9 +460,16 @@ def front_matter_span(lines: list[tuple[str, str]]) -> int:
 
 
 def match_directive(body: str) -> _Directive | None:
-    """识别抑制指令。不是指令时返回 None；reason 缺失时 ``reason`` 为空串。"""
+    """识别抑制指令。不是指令时返回 None；reason 缺失时 ``reason`` 为空串。
+
+    引用前缀先剥掉。剩下的行首按列计，超过 3 列（四格空格或一个 Tab）
+    是缩进代码，不当指令。
+    """
     _prefix, rest, _depth = peel_quotes(body)
-    content = rest.lstrip(" \t")
+    cols, index = measure_indent(rest)
+    if cols > 3:
+        return None
+    content = rest[index:]
     if not content.startswith("<!--"):
         return None
     match = SUPPRESSION_RE.match(content)

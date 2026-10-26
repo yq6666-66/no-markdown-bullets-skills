@@ -36,7 +36,7 @@
 | `description` | 说明何时启用：生成或改写面向读者的正文，且需要分点、步骤或对照 |
 | 放置路径 | 复制整个目录，不要只复制正文进系统提示后就把原文件扔掉。Cursor 与 Codex 的路径写在 Skill 正文和 README 里，发现结果都是待验证 |
 | 强制声明 | 集成方不能把「文件已复制」写成「宿主已强制执行」 |
-| 验证 | 先看宿主的 Skill 名单，再显式调用，再跑 `--check`。通过线是退出码 `0`，且 stderr 或 `--report` 含 `stripped=0`。docx 与 evals 不在这条线里 |
+| 验证 | 先看宿主的 Skill 名单，再显式调用，再对模型正文跑 `--check`。通过线是退出码 `0`、`stripped=0`，且没有抑制区（`--report` 的 `summary.suppression_blocks` 为 `0`，或正文里没有 `no-markdown-bullets:`）。人工源文件仍可使用抑制区。docx、evals、`python-docx` 不在这条线里 |
 | 例外 | 只允许用户当次明确要求的普通 UL。任务列表没有例外 |
 
 Skill 不管 HTML `<ul>`，不管网站 CSS，也不做文风润色。
@@ -106,9 +106,9 @@ Skill 不管 HTML `<ul>`，不管网站 CSS，也不做文风润色。
 
 Front matter 的缺口按遮罩补齐：TOML `+++`、中间空行则整段不算、闭合标记必须落在开标记之后 200 行内。YAML 仍允许 `...` 闭合。
 
-### 卫星（可选）
+### 卫星（可选，不进 Skill 验证主路径）
 
-`scripts/check_docx_numbering.py` 和 `evals/` 是**卫星（可选）**。可进仓库、可手动用，**不**计入「Skill 已可用 / 宿主验证」门槛，集成时也可以不接。主路径仍是 Skill 加 `scripts/strip_md_ul.py`。验证钉死 `--check`，且 stderr 或 `--report` 含 `stripped=0`。下面两节只说明手动怎么用。
+`scripts/check_docx_numbering.py`、`evals/` 和 `python-docx` 是**卫星（可选，不进 Skill 验证主路径）**。可进仓库、可手动用，集成时也可以不接。主路径仍是 Skill 加 `scripts/strip_md_ul.py`。下面两节只说明手动怎么用。
 
 ### docx 检查器
 
@@ -183,7 +183,7 @@ if result.exit_code != 0:
 | --- | --- |
 | Python | 3.10 及以上标准库。用到 `argparse`、`re`、`pathlib`、`dataclasses`、`json`，剥除器没有第三方包 |
 | 安装 | 不需要 `pip install`，也不发布 npm 包。安装步骤见 `docs/install.md` |
-| 可选测试 | `python-docx`。没装时 docx 真实文档测试跳过。CI 会安装它再跑全部测试 |
+| 可选测试 | `python-docx` 是**卫星（可选，不进 Skill 验证主路径）**。没装时 docx 真实文档测试跳过。CI 会安装它再跑全部测试 |
 | 网络 | 运行脚本和单元测试都不访问网络。evals 的手动 `--command` 可能访问网络，那不在默认 CI 里 |
 | 系统 | 无。stdin / stdout 使用二进制读写以保住 CRLF |
 | 已验证版本 | CI 矩阵是 Python 3.10 和 3.12。本仓库不把 ruff / mypy 放进这轮 CI |
@@ -226,7 +226,7 @@ echo $?
 
 ## 5. 注意事项
 
-1. 宿主不强制。复制 Skill 只是让支持该机制的工具有机会读到约定。集成完成的标志是 Skill 名单里出现名字，加上一次显式调用后 `stripped=0`，不是文件已经存在。
+1. 宿主不强制。复制 Skill 只是让支持该机制的工具有机会读到约定。集成完成的标志是 Skill 名单里出现名字，加上一次显式调用后模型正文满足 `--check` 退出码 `0`、`stripped=0`、且没有抑制区。不是文件已经存在。人工源文件仍可使用抑制区。
 2. 任务列表没有例外，也没有保留开关。即使用户说保留 bullet，`- [ ]` 和 `- [x]` 仍要改成纯文本，并且不能宣称勾选还在。这种「当次保留普通 UL」的输出不要送进脚本，脚本会把普通 UL 也剥掉。
 3. 例外只覆盖用户当次明确提出的那一份普通 UL，不写成全局偏好，也不要做成配置文件里的默认项。
 4. 退出码 `0` 表示结果干净，不表示输入干净。`--check` 同样如此，它只是不把正文打出来。
