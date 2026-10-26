@@ -1,3 +1,4 @@
+
 # no-markdown-bullets
 
 去掉面向读者的正文里，由 Markdown 无序列表渲染出来的大黑点，并把这条约束做成可以复制的 Skill。
@@ -6,7 +7,7 @@
 
 ## 状态
 
-M0 文档和 M1 的 Skill、剥除脚本、fixtures 都已经在本仓库里。下面说的「能用」只指这些文件，以及本仓库测试能够跑通。它不表示某个宿主已经强制执行了这条 Skill。
+Skill、剥除脚本、fixtures、抑制区与 `--report` 都已经在本仓库里（含卫星 docx/evals）。下面说的「能用」只指这些文件，以及本仓库测试能够跑通。它不表示某个宿主已经强制执行或已发现这条 Skill；宿主发现与强制执行仍标「待验证」。
 
 | 部分 | 状态 |
 | --- | --- |
@@ -15,7 +16,7 @@ M0 文档和 M1 的 Skill、剥除脚本、fixtures 都已经在本仓库里。�
 | 宿主发现与强制执行 | 待验证。放置路径写在下面，本仓库没有某次发现实验的记录 |
 | 消除一切可见黑点 | 不承诺。黑点不一定是 `disc`，Word 还受粘贴方式影响 |
 
-`scripts/check_docx_numbering.py`、`evals/` 和 `python-docx` 是**卫星（可选，不进 Skill 验证主路径）**。可以留在仓库里，也可以手动用。主路径仍是 Skill 加 `scripts/strip_md_ul.py`。核对模型正文要同时看到 `--check` 退出码 `0`、`stripped=0`，以及没有抑制区。
+`scripts/check_docx_numbering.py`、`evals/` 和 `python-docx` 是**卫星（可选，不进 Skill 验证主路径）**。可以留在仓库里，也可以手动用。主路径仍是 Skill 加 `scripts/strip_md_ul.py`。核对模型正文要同时看到 `--check` 退出码 `0`、`stripped=0`（或 `summary.stripped == 0`），以及 `summary.suppression_blocks == 0`（或正文无 `no-markdown-bullets:` 抑制注释）。
 
 一次输出里没有黑点，不能证明 Skill 已经被加载。
 
@@ -79,7 +80,7 @@ python scripts/strip_md_ul.py < input.md
 
 默认把改写结果写到标准输出，不修改源文件。诊断写到 stderr。把结果保存到新文件时使用重定向，看完退出码再决定是否替换。
 
-`--report PATH` 把 JSON 写到文件。`--report -` 把 JSON 写到 stderr，并且不再混入人类可读诊断。JSON 不进入 stdout，退出码也不因为加了报告而改变。
+`--report PATH` 把 JSON 写到文件。`--report -` 把 JSON 写到 stderr（此时不再混入人类可读诊断）；`--report PATH` 把 JSON 写到文件，stdout 仍是剥后正文。`--check` 时 stdout 无正文。JSON 不进入 stdout，退出码也不因为加了报告而改变。
 
 已经是 `.docx` 的文件不要用剥除器硬改。`python scripts/check_docx_numbering.py 文件.docx` 只报告 bullet 编号，退出码 `1` 表示发现了编号，和剥除器的 `1`（失败）不是一回事。它和 `python-docx` 都是**卫星（可选，不进 Skill 验证主路径）**。
 
@@ -88,8 +89,8 @@ python scripts/strip_md_ul.py < input.md
 | 退出码 | 含义 |
 | --- | --- |
 | 0 | 结果里没有残留 UL。源文件里原来有 UL，只要剥干净，仍然是 0 |
-| 2 | 有跳过，例如未闭合围栏。开栏之后直到文件末尾都不会剥 |
-| 1 | 失败。剥后仍有 UL、文件打不开或参数错误。这时的标准输出不能当终稿 |
+| 2 | 有跳过（例如未闭合围栏或抑制区）；结果仍可能无残留 UL。**不是**脚本崩溃，先修源结构再谈源净 |
+| 1 | 失败。剥后仍有 UL、剥后新产生跳过区、文件打不开或参数错误。这时的标准输出不能当终稿 |
 
 `--check` 不输出正文，退出码与默认改写相同。因此源文件里有 UL 时，`--check` 仍可能返回 0。确认「源文件本来就干净」要同时看到 `stripped=0`。
 
