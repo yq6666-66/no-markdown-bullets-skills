@@ -36,7 +36,7 @@
 | `description` | 说明何时启用：生成或改写面向读者的正文，且需要分点、步骤或对照 |
 | 放置路径 | 复制整个目录，不要只复制正文进系统提示后就把原文件扔掉。Cursor 与 Codex 的路径写在 Skill 正文和 README 里，发现结果都是待验证 |
 | 强制声明 | 集成方不能把「文件已复制」写成「宿主已强制执行」 |
-| 验证 | 先看宿主的 Skill 名单，再显式调用，再用脚本的 `stripped=0` 作通过线 |
+| 验证 | 先看宿主的 Skill 名单，再显式调用，再跑 `--check`。通过线是退出码 `0`，且 stderr 或 `--report` 含 `stripped=0`。docx 与 evals 不在这条线里 |
 | 例外 | 只允许用户当次明确要求的普通 UL。任务列表没有例外 |
 
 Skill 不管 HTML `<ul>`，不管网站 CSS，也不做文风润色。
@@ -105,6 +105,10 @@ Skill 不管 HTML `<ul>`，不管网站 CSS，也不做文风润色。
 5. 抑制区内的空行不清外侧列表。`suppressed_lines` 计区内被原样抄写的行，不含 `off` / `on` 两行本身。
 
 Front matter 的缺口按遮罩补齐：TOML `+++`、中间空行则整段不算、闭合标记必须落在开标记之后 200 行内。YAML 仍允许 `...` 闭合。
+
+### 卫星（可选）
+
+`scripts/check_docx_numbering.py` 和 `evals/` 是**卫星（可选）**。可进仓库、可手动用，**不**计入「Skill 已可用 / 宿主验证」门槛，集成时也可以不接。主路径仍是 Skill 加 `scripts/strip_md_ul.py`。验证钉死 `--check`，且 stderr 或 `--report` 含 `stripped=0`。下面两节只说明手动怎么用。
 
 ### docx 检查器
 
