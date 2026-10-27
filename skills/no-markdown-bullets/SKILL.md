@@ -1,6 +1,6 @@
 ---
 name: no-markdown-bullets
-description: 在生成或改写面向读者的正文、并且内容需要分点、步骤或对照时使用。禁止 Markdown 无序列表和任务列表，改用段落、有序列表或表格。不用于润色文风，也不修改网页样式。
+description: 去黑点、禁 Markdown 无序列表与任务列表（bullet）时用：面向读者正文要分点、步骤或对照，改用段落、有序列表或表格。不润色文风，不改网页样式。触发词：去黑点、无序列表、bullet、任务列表、Markdown 列表、分点、步骤、对照。
 ---
 
 # no-markdown-bullets

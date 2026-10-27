@@ -10,6 +10,8 @@
 
 精简根 README（中文主 + 英文 `README.en.md`）：只保留简述、问题、功能、技术、用法；事实对齐 v3.2.0。GitHub About 建议文案见 PR 说明（合入后再改仓库 description）。
 
+补 SKILL description 触发词与中文可发现性；README 用法补自定义指令、显式点名与强列表例外；新增 docs/扫读代价与下游边界.md。
+
 ## 3.2.0
 
 1. 在 v3.1 基线上补了 front matter 遮罩：TOML `+++`、空行作废、200 行窗口。YAML 仍可用 `---` 或 `...` 闭合。
