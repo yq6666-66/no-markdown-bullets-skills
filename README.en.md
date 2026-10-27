@@ -1,50 +1,40 @@
 # no-markdown-bullets
 
-A reusable agent skill that bans reader-facing Markdown unordered lists (the disc bullets many previews render), keeps ordered lists and tables, and ships a stdlib strip/check script. This repo is a standalone docs + skill delivery; it does not modify or depend on other plugin repos. Versioning follows tag **v3.2.0** and `CHANGELOG.md`.
+A reusable agent skill that removes disc bullets rendered from reader-facing Markdown unordered lists, while keeping ordered lists and tables. This repo is a standalone docs + skill delivery; it does not modify or depend on other plugin repos. Versioning follows tags and `CHANGELOG.md`.
 
 ## Problem
 
-Models often emit unordered lists that start with `-` / `*` / `+` plus whitespace (including empty items and task lists). GitHub previews and many chat UIs render those as dots (commonly `list-style: disc`). Editing one draft or site CSS does not stop the next generation, chat, or Word paste. You need a copyable contract: what is banned, what stays, and when exceptions apply.
+Models often emit unordered lists that start with `-` / `*` / `+` plus whitespace (including empty items), plus task lists. GitHub previews and many chat UIs draw those as dots. `•` / `·` are ordinary characters, not list syntax. Editing one draft or site CSS does not stop the next generation, chat, or Word paste.
 
 ## Features
 
-1. **Skill contract**: Package the rules into `skills/no-markdown-bullets/` (including `SKILL.md`) so you can hand the whole folder to an AI.
-2. **Strip and check**: `scripts/strip_md_ul.py` rewrites existing UL markers; `--check` / `--report` define the pass line (exit code, `stripped`, suppression counts).
-3. **Three scenes**: Change source structure on GitHub; give the skill to the AI in chat (optionally run the script); paste plain text or clear bullets in Word / WPS (see `docs/`).
-4. **Non-promises**: Host auto-load and 100% model compliance are not guaranteed. Files on disk ≠ loaded ≠ obeyed. `check_docx_numbering.py`, `evals/`, and `python-docx` are optional satellites off the main verification path.
+1. **Banned**: reader-facing unordered lists and task lists (task lists cannot be kept via a “keep bullets” exception).
+2. **Kept**: ordered lists, tables, code blocks, thematic breaks, inline emphasis, and similar.
+3. **Exception**: when the user clearly asks to keep bullets in that turn, ordinary UL may stay; task lists may not.
+4. **Shape**: `skills/no-markdown-bullets/` (with `SKILL.md`) plus `scripts/strip_md_ul.py`. No prose polish, no browser/Word plug-in, no npm package. Host enforcement is **not** promised: files on disk ≠ loaded ≠ obeyed.
 
 ## Technology
 
-1. **Runtime**: Python 3.10+ stdlib for the main script; CI matrix 3.10 and 3.12.
-2. **Main path**: Skill + `scripts/strip_md_ul.py` + `fixtures/` / unit tests.
-3. **Pass line (model body)**: `--check` exit `0`, report `stripped=0`, and `summary.suppression_blocks == 0` (or no `no-markdown-bullets:` suppression comments in the body). Human sources may still use suppression blocks.
-4. **Integration**: See `INTEGRATION.md`; rule details in `docs/规则与边界.md`.
+1. Python 3.10+ stdlib runs the script; CI matrix is 3.10 and 3.12.
+2. Main path is the Skill plus `strip_md_ul.py`; `check_docx_numbering.py` / `evals/` / `python-docx` are optional satellites.
+3. Pass line for model body: `--check` exit `0`, report `stripped=0`, and `summary.suppression_blocks == 0`. Human sources may still use suppression blocks.
+4. Rule details: `docs/规则与边界.md`; install paths: `docs/install.md`.
 
 ## Usage
 
-1. Hand `skills/no-markdown-bullets/` to the target AI, or copy it into the host skills directory (common paths in `docs/install.md`); ask it to follow `SKILL.md`.
-2. Optionally save the visible model body and check:
+1. **Recommended**: hand `skills/no-markdown-bullets/` to the target AI and ask it to follow `SKILL.md`. Host skill-list screenshots and Discovery are not a usage gate.
+2. Optionally copy into a host skills directory; common paths are in `docs/install.md`. Missing from a discovery list does not block use.
+3. Optionally save the visible model body and check:
 
 ```bash
-python scripts/strip_md_ul.py --check --report - output.md
+python scripts/strip_md_ul.py --check --report - body.md
 ```
 
-3. Common rewrite commands (stdout by default; does not overwrite the source):
+4. By default the script writes the rewrite to stdout and does not modify the source:
 
 ```bash
 python scripts/strip_md_ul.py input.md
 python scripts/strip_md_ul.py --dry-run input.md
-python scripts/strip_md_ul.py --report report.json input.md
 ```
 
-4. Repo self-test:
-
-```bash
-python -m unittest discover -s tests -v
-```
-
-Chinese primary README: [README.md](README.md).
-
-## License
-
-MIT; see `LICENSE`.
+Chinese primary README: [README.md](README.md). License: MIT (`LICENSE`).
