@@ -253,7 +253,7 @@ class CommandTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             source = Path(directory) / "note.md"
             report_path = Path(directory) / "report.json"
-            source.write_text("- item\n", encoding="utf-8")
+            source.write_text("- item\n", encoding="utf-8", newline="\n")
             proc = subprocess.run(
                 [
                     sys.executable,
@@ -313,6 +313,27 @@ class CommandTests(unittest.TestCase):
             self.assertEqual(proc.returncode, 1)
             self.assertEqual(proc.stdout, b"")
             self.assertIn(b"error:", proc.stderr)
+
+    def test_version_flag_prints_version_and_exits_zero(self):
+        proc = subprocess.run(
+            [sys.executable, str(SCRIPT), "--version"],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            check=False,
+        )
+        self.assertEqual(proc.returncode, 0)
+        stdout = proc.stdout.replace(b"\r\n", b"\n").decode("utf-8")
+        expected = f"strip_md_ul.py {strip_md_ul.__version__}\n"
+        self.assertEqual(stdout, expected)
+        self.assertEqual(proc.stderr, b"")
+        help_proc = subprocess.run(
+            [sys.executable, str(SCRIPT), "--help"],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            check=False,
+        )
+        self.assertEqual(help_proc.returncode, 0)
+        self.assertIn(b"--version", help_proc.stdout)
 
 
 class RegionTests(unittest.TestCase):

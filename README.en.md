@@ -15,7 +15,7 @@ Models often emit unordered lists that start with `-` / `*` / `+` plus whitespac
 3. **Exception**: when the user clearly asks to keep bullets in that turn, ordinary UL may stay; task lists may not.
 4. **Shape**: `skills/no-markdown-bullets/` (with `SKILL.md`) plus `scripts/strip_md_ul.py`. No prose polish, no browser/Word plug-in, no npm package. Host enforcement is **not** promised: files on disk ≠ loaded ≠ obeyed.
 
-Field evidence aligned to tip `90b40d16` / v3.2.0 includes an ~19k-character thesis-style body, seven format-boundary suites, a hand-made Word bullet docx, and a list-heavy operations manual. This does **not** promise 100% on any host or model.
+External field evidence aligned to tip `90b40d16` / v3.2.0 includes an ~19k-character thesis-style body, seven format-boundary suites, a hand-made Word bullet docx, and a list-heavy operations manual. From that tip through tip `302f888` / v3.3.0, `strip_md_ul.py` behavior was unchanged (v3.3.0 was a docs release); this release does not claim a new round of host field tests. This does **not** promise 100% on any host or model.
 
 ## Technology
 

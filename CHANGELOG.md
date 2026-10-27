@@ -4,7 +4,19 @@
 
 主工具是 `scripts/strip_md_ul.py`。退出码 `0` / `2` / `1` 的含义以 `docs/规则与边界.md` 为准。
 
-## Unreleased
+## 3.3.1
+
+### Fixed
+
+Tests: `test_report_file_keeps_stdout_as_body` writes its fixture with `newline="\n"`, so stdout stays exact `b"item\n"` under Windows CRLF text-mode semantics. List removal in `strip_md_ul.py` is unchanged.
+
+### Added
+
+CLI: `python scripts/strip_md_ul.py --version` prints `strip_md_ul.py 3.3.1` and exits 0. `--help` lists the flag. `__version__` is `3.3.1`; `--report` JSON `version` follows it. `INTEGRATION.md` records the same version and the flag. The version unit test compares the full stdout after normalizing `\r\n` to `\n`, against `strip_md_ul.py` plus `strip_md_ul.__version__`. The stripper stdout write path is unchanged.
+
+### Changed
+
+Docs: `README.md`, `README.en.md`, and `docs/宿主适配-Muse与WorkBuddy.md` state the field evidence as 外部实测对齐 tip `90b40d16` / v3.2.0. From that tip through tip `302f888` / v3.3.0, `strip_md_ul.py` behavior was unchanged and v3.3.0 was a docs release. v3.3.1 does not claim a new round of host field tests.
 
 ## 3.3.0
 

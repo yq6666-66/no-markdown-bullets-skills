@@ -40,7 +40,7 @@ import sys
 from dataclasses import dataclass, field
 from pathlib import Path
 
-__version__ = "3.1.0"
+__version__ = "3.3.1"
 
 
 UL_MARKERS = "-*+"
@@ -946,6 +946,12 @@ def main(argv: list[str] | None = None) -> int:
             "把 JSON 报告写到 PATH。PATH 为 - 时写到 stderr，"
             "并且不再混入人类可读诊断。绝不写到 stdout。"
         ),
+    )
+    parser.add_argument(
+        "--version",
+        action="version",
+        version=f"%(prog)s {__version__}",
+        help="打印版本号并以退出码 0 结束",
     )
     args = parser.parse_args(argv)
     if args.check and args.dry_run:
