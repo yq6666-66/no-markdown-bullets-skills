@@ -1,5 +1,7 @@
 # no-markdown-bullets
 
+[简体中文](README.md)
+
 A reusable agent skill that removes disc bullets rendered from reader-facing Markdown unordered lists, while keeping ordered lists and tables. This repo is a standalone docs + skill delivery; it does not modify or depend on other plugin repos. Versioning follows tags and `CHANGELOG.md`.
 
 ## Problem
@@ -53,4 +55,4 @@ Models often emit unordered lists that start with `-` / `*` / `+` plus whitespac
 
 7. For the scan-cost trade-off of banning bullets, and what this Skill does not cover downstream (Word / HTML), see [`docs/扫读代价与下游边界.md`](docs/扫读代价与下游边界.md).
 
-Chinese primary README: [README.md](README.md). License: MIT (`LICENSE`).
+License: MIT (`LICENSE`).
