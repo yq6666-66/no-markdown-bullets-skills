@@ -55,7 +55,17 @@
    python scripts/strip_md_ul.py --dry-run input.md
    ```
 
-7. Muse / WorkBuddy 等宿主适配要点（转写、自定义指令常驻、不承诺硬强制），见 [`docs/宿主适配-Muse与WorkBuddy.md`](docs/宿主适配-Muse与WorkBuddy.md)。
+7. Muse / WorkBuddy 的接入方式与实测摘要见下方「其他 AI 应用中的实例」；完整限制见 [`docs/宿主适配-Muse与WorkBuddy.md`](docs/宿主适配-Muse与WorkBuddy.md)。
 8. 禁 bullet 换来的扫读代价，以及管不到 Word / HTML 等下游，见 [`docs/扫读代价与下游边界.md`](docs/扫读代价与下游边界.md)。
+
+### 其他 AI 应用中的实例
+
+下列结果对齐 v3.2.0 已落盘评估；装目录不等于已加载，亦不承诺任意宿主或模型 100%。
+
+**Muse。** 当次把 `skills/no-markdown-bullets/` 交给对话并明示约定即可试写；长期复用需转写成 Muse 本地说明（无 frontmatter 的 `SKILL.md`）加 `skill.yaml`，脚本仍在仓库根对正文跑 `--check`。论文体试写已走通提示词路径；做不到全局硬禁圆点。
+
+**WorkBuddy。** 将 Skill 目录放入用户 skills 后可被列表发现；要贯穿全文须把「默认写法」抄进自定义指令，交付前再跑通过线。针对约 1.9 万字论文体、七组格式边界、人工 Word 项目符号样例与强列表运维手册这组已落盘样本，脚本可通过线（退出码 `0`，`stripped=0`，`suppression_blocks=0`）。
+
+细节见 [`docs/宿主适配-Muse与WorkBuddy.md`](docs/宿主适配-Muse与WorkBuddy.md)。
 
 许可见 `LICENSE`（MIT）。

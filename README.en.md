@@ -55,7 +55,17 @@ Field evidence aligned to tip `90b40d16` / v3.2.0 includes an ~19k-character the
    python scripts/strip_md_ul.py --dry-run input.md
    ```
 
-7. Muse / WorkBuddy host notes (rewrite packaging, standing custom instructions, no hard enforcement promise): [`docs/宿主适配-Muse与WorkBuddy.md`](docs/宿主适配-Muse与WorkBuddy.md).
+7. Muse / WorkBuddy how-to and short results are under “Examples in other AI apps” below; full limits: [`docs/宿主适配-Muse与WorkBuddy.md`](docs/宿主适配-Muse与WorkBuddy.md).
 8. For the scan-cost trade-off of banning bullets, and what this Skill does not cover downstream (Word / HTML), see [`docs/扫读代价与下游边界.md`](docs/扫读代价与下游边界.md).
+
+### Examples in other AI apps
+
+Short results from v3.2.0 materials already in-repo. Files on disk do not mean the skill is loaded or enforced, and this does not promise 100% on any host or model.
+
+**Muse.** Hand `skills/no-markdown-bullets/` into the chat with an explicit convention for a one-off trial; lasting use needs a Muse-local rewrite (`SKILL.md` without frontmatter plus `skill.yaml`) and `--check` from the repo root. A thesis-style trial worked on the prompt path; Muse cannot hard-ban bullets globally.
+
+**WorkBuddy.** Installing under user skills makes the skill listable; persistence needs the default-writing rules copied into custom instructions, plus the script pass line before delivery. For the landed sample set—about 19k characters of thesis-style text, seven format-boundary cases, a Word bullet sample, and a list-heavy ops manual—the pass line held (exit `0`, `stripped=0`, `suppression_blocks=0`).
+
+See [`docs/宿主适配-Muse与WorkBuddy.md`](docs/宿主适配-Muse与WorkBuddy.md).
 
 License: MIT (`LICENSE`).
