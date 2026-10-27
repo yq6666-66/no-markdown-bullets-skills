@@ -4,6 +4,14 @@
 
 主工具是 `scripts/strip_md_ul.py`。退出码 `0` / `2` / `1` 的含义以 `docs/规则与边界.md` 为准。
 
+## [Unreleased]
+
+### Changed
+
+围栏外，整行只含 `+` 与空白且加号不少于三个时，不再保留为主题分隔线，改成空行；`-`、`*` 与下划线分隔线不变。
+
+安装说明以 `.agents/skills/no-markdown-bullets` 为建议放置，`.codex/skills` 仅作兼容与历史路径，是否读取仍以宿主版本为准。
+
 ## 3.3.1
 
 ### Fixed

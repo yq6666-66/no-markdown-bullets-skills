@@ -426,6 +426,94 @@ class RegionTests(unittest.TestCase):
                 self.assertEqual(result.stripped_lines, lines)
 
 
+class PlusOnlyLineTests(unittest.TestCase):
+    def _run(self, text: str, check: bool = False) -> subprocess.CompletedProcess[bytes]:
+        args = [sys.executable, str(SCRIPT)]
+        if check:
+            args.append("--check")
+        return subprocess.run(
+            args,
+            input=text.encode("utf-8"),
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            check=False,
+        )
+
+    def test_markers_do_not_treat_plus_as_thematic(self):
+        self.assertNotIn("+", strip_md_ul.THEMATIC_MARKERS)
+        self.assertTrue(set("-*_") <= set(strip_md_ul.THEMATIC_MARKERS))
+        self.assertIn("+", strip_md_ul.UL_MARKERS)
+
+    def test_bare_plus_run_becomes_empty_line_exit_0(self):
+        proc = self._run("+ + +\n")
+        self.assertEqual(proc.returncode, 0)
+        self.assertEqual(proc.stdout, b"\n")
+        self.assertNotIn(b"residual unordered list", proc.stderr)
+
+        checked = self._run("+ + +\n", check=True)
+        self.assertEqual(checked.returncode, 0)
+        self.assertEqual(checked.stdout, b"")
+        self.assertNotIn(b"residual unordered list", checked.stderr)
+
+    def test_fenced_plus_run_is_unchanged_exit_0(self):
+        for source in ("```\n+ + +\n```\n", "~~~\n+ + +\n~~~\n"):
+            with self.subTest(source=source):
+                proc = self._run(source)
+                self.assertEqual(proc.returncode, 0)
+                self.assertEqual(proc.stdout, source.encode("utf-8"))
+                self.assertNotIn(b"residual unordered list", proc.stderr)
+
+    def test_plus_item_still_strips_exit_0(self):
+        proc = self._run("+ item\n")
+        self.assertEqual(proc.returncode, 0)
+        self.assertEqual(proc.stdout, b"item\n")
+
+    def test_hyphen_and_star_thematic_breaks_stay_exit_0(self):
+        for source in ("- - -\n", "***\n", "* * *\n", "___\n"):
+            with self.subTest(source=source):
+                proc = self._run(source)
+                self.assertEqual(proc.returncode, 0)
+                self.assertEqual(proc.stdout, source.encode("utf-8"))
+
+    def test_blockquote_tabs_trailing_space_and_four_pluses_become_empty(self):
+        cases = (
+            "> + + +\n",
+            "> > + + +\n",
+            "+\t+\t+\n",
+            "+ + +\t\n",
+            "+ + +   \n",
+            "+ + + +\n",
+            "+++\n",
+            "   + + +\n",
+        )
+        for source in cases:
+            with self.subTest(source=source):
+                proc = self._run(source)
+                self.assertEqual(proc.returncode, 0, proc.stderr)
+                self.assertEqual(proc.stdout, b"\n")
+                self.assertNotIn(b"residual unordered list", proc.stderr)
+
+    def test_exactly_two_pluses_stay_on_ul_residual_path(self):
+        proc = self._run("+ +\n")
+        self.assertEqual(proc.returncode, 1)
+        self.assertEqual(proc.stdout, b"+\n")
+        self.assertNotEqual(proc.stdout, b"\n")
+        self.assertIn(b"residual unordered list", proc.stderr)
+
+    def test_mixed_plus_item_and_plus_run_with_real_thematic_breaks(self):
+        proc = self._run("+ item\n+ + +\n- - -\n***\n")
+        self.assertEqual(proc.returncode, 0)
+        self.assertEqual(proc.stdout, b"item\n\n- - -\n***\n")
+        self.assertNotIn(b"residual unordered list", proc.stderr)
+
+    def test_indented_plus_run_stays_indented_code(self):
+        for source in ("    + + +\n", "\t+ + +\n"):
+            with self.subTest(source=source):
+                proc = self._run(source)
+                self.assertEqual(proc.returncode, 0)
+                self.assertEqual(proc.stdout, source.encode("utf-8"))
+
+
 class RepoTextTests(unittest.TestCase):
     def test_delivered_docs_have_no_strippable_ul(self):
         for path in DOC_PATHS:

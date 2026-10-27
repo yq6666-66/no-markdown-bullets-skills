@@ -1,5 +1,5 @@
 {
-  "description": "加号列表与加号分隔线",
+  "description": "加号列表与纯加号行",
   "expect_exit": 0,
-  "skip_reason": "无。+ item 要剥；+ + + 是分隔线，不剥"
+  "skip_reason": "无。+ item 要剥；整行只有加号且不少于三个时改成空行，不再当分隔线"
 }

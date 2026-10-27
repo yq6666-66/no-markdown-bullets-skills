@@ -1,5 +1,5 @@
 {
   "description": "主题分隔线",
   "expect_exit": 0,
-  "skip_reason": "分隔线在剥 UL 之前识别，整行不改"
+  "skip_reason": "无。-、*、_ 分隔线原样保留；整行只有加号且不少于三个时改成空行"
 }
