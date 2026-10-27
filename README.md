@@ -1,156 +1,49 @@
 # no-markdown-bullets
 
-去掉面向读者的正文里，由 Markdown 无序列表渲染出来的大黑点，并把这条约束做成可以复制的 Skill。
+可复制的 Agent Skill：禁止面向读者正文里的 Markdown 无序列表（预览里常见的大黑点），保留有序列表与表格；附带标准库剥除/检查脚本。本仓库独立交付，不修改、也不依赖其他插件仓库。当前版本以仓库标签 **v3.2.0** 与 `CHANGELOG.md` 为准。
 
-本仓库是独立的文档加 Skill 交付。它不修改、也不依赖其他插件仓库。
+## 问题
 
-## 状态
+模型常在可见回复里写行首 `-` / `*` / `+` 加空白的无序列表（含空项与任务列表）。GitHub 预览和不少聊天气泡会把它画成圆点（常见 `list-style: disc`）。只改一篇文案或只改网站 CSS，管不到下次生成、聊天和 Word。需要一份可复制的约定，说明禁什么、留什么、例外何时成立。
 
-Skill、剥除脚本、fixtures、抑制区与 `--report` 都已经在本仓库里（含卫星 docx/evals）。下面说的「能用」只指这些文件，以及本仓库测试能够跑通。
+## 功能
 
-**推荐用法**：把本仓库的 Skill（`skills/no-markdown-bullets/` 整目录，含 `SKILL.md`）交给对应 AI / 助手，由对方按 `SKILL.md` 自行适配并遵守约定。不以「宿主 Skill 列表截图 / 列出可见 Skill」为使用门槛；宿主发现实验已关闭，Discovery 不作门槛。文件放进目录 ≠ 宿主已加载 ≠ 模型一定遵守；本仓库**不承诺**宿主强制执行。
+1. **Skill 约定**：把「禁无序列表 / 留编号与表格 / 例外与抑制区」收成可整目录交给 AI 的 `skills/no-markdown-bullets/`（含 `SKILL.md`）。
+2. **剥除与检查**：`scripts/strip_md_ul.py` 处理已写出的 UL 标记；`--check` / `--report` 给出通过线（退出码、`stripped`、抑制区计数）。
+3. **三场景指引**：在 GitHub 上改源码结构；聊天交给 AI 按 Skill 生成并可选跑脚本；Word / WPS 粘贴纯文本或取消项目符号（详见 `docs/`）。
+4. **不承诺**：不承诺宿主强制加载或任意模型 100% 遵守；文件放入目录 ≠ 已加载 ≠ 一定遵守。`check_docx_numbering.py`、`evals/`、`python-docx` 为可选卫星，不进主验证路径。
 
-说明：当前文档（README 与 `docs/install.md`）描述用法与安装；`skills/no-markdown-bullets/SKILL.md` 正文未改。
+## 技术
 
-| 部分 | 状态 |
-| --- | --- |
-| `skills/no-markdown-bullets/SKILL.md` | 已写入，可整目录交给 AI，也可手工复制到宿主 |
-| `scripts/strip_md_ul.py` 与 `fixtures/` | 已写入。验收以本仓库单元测试通过为准 |
-| 推荐用法 / 使用门槛 | 把 Skill 交给对应 AI 自适配；Discovery / 列表截图不作门槛。不承诺宿主强制执行 |
-| 消除一切可见黑点 | 不承诺。黑点不一定是 `disc`，Word 还受粘贴方式影响 |
+1. **运行时**：Python 3.10+ 标准库即可跑主脚本；CI 矩阵为 3.10 与 3.12。
+2. **主路径**：Skill + `scripts/strip_md_ul.py` + `fixtures/` / 单元测试。
+3. **通过线（模型正文）**：`--check` 退出码 `0`，报告 `stripped=0`，且 `summary.suppression_blocks == 0`（或正文无 `no-markdown-bullets:` 抑制注释）。人工源文件仍可使用抑制区。
+4. **接口说明**：后续集成见 `INTEGRATION.md`；规则细节见 `docs/规则与边界.md`。
 
-`scripts/check_docx_numbering.py`、`evals/` 和 `python-docx` 是**卫星（可选，不进 Skill 验证主路径）**。可以留在仓库里，也可以手动用。主路径仍是 Skill 加 `scripts/strip_md_ul.py`。核对模型正文要同时看到 `--check` 退出码 `0`、`stripped=0`（或 `summary.stripped == 0`），以及 `summary.suppression_blocks == 0`（或正文无 `no-markdown-bullets:` 抑制注释）。
+## 用法
 
-一次输出里没有黑点，不能证明 Skill 已经被加载。
+1. 把 `skills/no-markdown-bullets/` 整目录交给目标 AI，或复制到宿主 Skills 目录（常见路径示例见 `docs/install.md`）；说明按 `SKILL.md` 生成。
+2. （可选）把模型可见正文存成文件后检查：
 
-## 问题是什么
+```bash
+python scripts/strip_md_ul.py --check --report - 输出.md
+```
 
-模型常在可见回复里使用 Markdown 无序列表：行首的 `-`、`*`、`+` 后面跟空格或 Tab，也包括只有标记的空列表项。GitHub 预览、不少聊天气泡会把这种列表画成圆点，浏览器里常见的是 `list-style: disc`。这不是缺字。
-
-`•` 和 `·` 是普通字符，不是这种列表语法。任务列表同样是无序列表，本仓库禁止，并且不保留勾选框。
-
-## 为什么用 Skill
-
-同一现象会出现在 GitHub、聊天和 Word / WPS。只改一篇文案，下一次生成还会出现。只改网站 CSS 管不到聊天和 Word。Skill 把「禁什么、留什么、例外何时成立」收成一份可复制的约定。脚本用来处理已经写出来的标记，不代替生成时的约束。
-
-本仓库不做文风润色，不做浏览器或 Word 插件，也不发布 npm 命令行包。
-
-## 回答
-
-要禁的是无序列表语法，不是一切列表。编号列表和表格留下。围栏、缩进代码、成对且满足窗口条件的 YAML / TOML front matter、分隔线和行内 `*强调*` 留下。人工可以用抑制注释把一段标成不改写，见 `docs/规则与边界.md`。模型不要用这种注释把圆点藏进正文。
-
-三个场景的做法不同：
-
-1. GitHub：改源码结构，不改网站 CSS。
-2. 聊天：把 Skill 交给对应 AI 使用，生成时用段落或编号；必要时对模型输出全文跑脚本。
-3. Word / WPS：粘贴时只保留文本，或在软件里取消项目符号。
-
-正面要求优先于一句「不要用列表」。用户当次明确要求保留 bullet 时，这一次普通无序列表可以例外。任务列表不在例外里。细节见 `docs/规则与边界.md`。
-
-## 如何使用
-
-依赖只有 Python 3.10 及以上的标准库，不需要安装第三方包。CI 矩阵是 Python 3.10 和 3.12。语法按 3.10+ 编写。
-
-### 放置 Skill
-
-把目录 `skills/no-markdown-bullets/` 整份复制到宿主的 Skills 目录，其中要有 `SKILL.md`；也可以不依赖宿主目录，直接把该目录交给目标 AI，由它按 `SKILL.md` 自行适配。分工具路径、更新、卸载和自测清单写在 `docs/install.md`。下表是 Cursor 和 Codex 的常见放置位置，仅供参考；是否被宿主自动发现因工具而异，**不是**使用前提。
-
-| 宿主 | 路径 | 说明 |
-| --- | --- | --- |
-| Cursor 项目 | `<项目>/.cursor/skills/no-markdown-bullets/SKILL.md` | 常见放置（路径示例） |
-| Cursor 用户目录 | `~/.cursor/skills/no-markdown-bullets/SKILL.md` | 常见放置（路径示例） |
-| Codex 项目 | `<项目>/.codex/skills/no-markdown-bullets/SKILL.md` | 常见放置（路径示例） |
-| Codex 用户目录 | `~/.codex/skills/no-markdown-bullets/SKILL.md` | 常见放置（路径示例） |
-
-放置或交给 AI 之后：
-
-1. 把 Skill 目录交给对应 AI，说明按 `SKILL.md` 约定生成；也可用 `docs/三场景实操.md` 里的固定提示词显式调用。
-2. （可选）新开对话后，可尝试请宿主列出当前能发现的 Skill。列不出也不妨碍使用。
-3. 把模型可见正文存成文件，执行 `python scripts/strip_md_ul.py --check --report - 输出.md`。通过线是退出码 `0`，报告里 `stripped=0`，并且 `summary.suppression_blocks` 为 `0`。不想看报告时，正文里也不能出现 `no-markdown-bullets:`。人工源文件仍可使用抑制区。
-
-### 运行脚本
-
-在仓库根目录：
+3. 改写到标准输出、不覆盖源文件的常用命令：
 
 ```bash
 python scripts/strip_md_ul.py input.md
-python scripts/strip_md_ul.py --check input.md
 python scripts/strip_md_ul.py --dry-run input.md
 python scripts/strip_md_ul.py --report report.json input.md
-python scripts/strip_md_ul.py --report - --check input.md
-python scripts/strip_md_ul.py < input.md
 ```
 
-默认把改写结果写到标准输出，不修改源文件。诊断写到 stderr。把结果保存到新文件时使用重定向，看完退出码再决定是否替换。
-
-`--report PATH` 把 JSON 写到文件。`--report -` 把 JSON 写到 stderr（此时不再混入人类可读诊断）；`--report PATH` 把 JSON 写到文件，stdout 仍是剥后正文。`--check` 时 stdout 无正文。JSON 不进入 stdout，退出码也不因为加了报告而改变。
-
-已经是 `.docx` 的文件不要用剥除器硬改。`python scripts/check_docx_numbering.py 文件.docx` 只报告 bullet 编号，退出码 `1` 表示发现了编号，和剥除器的 `1`（失败）不是一回事。它和 `python-docx` 都是**卫星（可选，不进 Skill 验证主路径）**。
-
-`evals/` 也是**卫星（可选，不进 Skill 验证主路径）**，用来手动对照模型输出。CI 不调用模型，只检查提示集。见 `evals/README.md`。
-
-| 退出码 | 含义 |
-| --- | --- |
-| 0 | 结果里没有残留 UL。源文件里原来有 UL，只要剥干净，仍然是 0 |
-| 2 | 有跳过（例如未闭合围栏或抑制区）；结果仍可能无残留 UL。**不是**脚本崩溃，先修源结构再谈源净 |
-| 1 | 失败。剥后仍有 UL、剥后新产生跳过区、文件打不开或参数错误。这时的标准输出不能当终稿 |
-
-`--check` 不输出正文，退出码与默认改写相同。因此源文件里有 UL 时，`--check` 仍可能返回 0。确认「源文件本来就干净」要同时看到 `stripped=0`。
-
-## 成功标准
-
-文案上，读者应能分清黑点从哪来、禁什么、留什么，以及三个场景怎么做。这里的「短时间能看懂」不是计时测试。
-
-| 项 | 取值 |
-| --- | --- |
-| 用法 | 把 Skill 交给对应 AI 自适配；Discovery / 列表截图不作门槛。不承诺宿主强制执行 |
-| 宿主路径 | Cursor 等路径见上表，仅为常见放置示例 |
-| 模型 | 不保证任意模型一定遵守；以正文通过线为准 |
-| 版本 | 以本仓库提交与 `CHANGELOG.md` 为准 |
-| 固定提示词 | 与 `docs/三场景实操.md` 文末三句相同，验收时不要改写 |
-| 计数 | 解析后的待剥 UL 节点数，不是截图里的圆点 |
-| 通过线 | 模型正文：`--check` 退出码 `0`，`stripped=0`，且没有抑制区（`--report` 的 `summary.suppression_blocks` 为 `0`，或正文无 `no-markdown-bullets:`）。人工源文件仍可使用抑制区 |
-| 不计入 | 围栏、front matter、抑制区、表格、缩进代码内部的标记 |
-| 上限 | 不承诺任意助手或任意模型达到 100% |
-
-固定提示词：
-
-1. 请用普通段落说明 Markdown 无序列表为什么会在预览里变成圆点。不要使用项目符号。
-2. 请写出把这段文字粘贴到 Word 之前的三步操作，使用编号列表。
-3. 请用表格对比段落、编号列表、表格这三种写法。列：场景、写法、会不会变成 disc 圆点。
-
-## 仓库内容
-
-```text
-README.md
-LICENSE
-INTEGRATION.md
-CHANGELOG.md
-skills/no-markdown-bullets/SKILL.md
-docs/排查结论.md
-docs/三场景实操.md
-docs/规则与边界.md
-docs/install.md
-scripts/strip_md_ul.py
-scripts/check_docx_numbering.py
-evals/
-fixtures/
-tests/
-```
-
-`scripts/check_docx_numbering.py`、`evals/` 和 `python-docx` 是**卫星（可选，不进 Skill 验证主路径）**。可进仓库、可手动用。主路径仍是 Skill 加 `scripts/strip_md_ul.py`。
-
-给后续集成的接口、依赖和调用方式写在 `INTEGRATION.md`。
-
-## 验收
-
-在仓库根目录执行：
+4. 仓库自测：
 
 ```bash
 python -m unittest discover -s tests -v
 ```
 
-测试会核对每个 fixture 的输入、预期和退出码，检查幂等、CRLF、标准输出不覆盖源文件，并确认本仓库交付文档自身没有待剥 UL。CI 在 Python 3.10 和 3.12 上跑同一条命令，并安装可选的 `python-docx` 以执行 docx 真实文档测试。没装这个包时，那一组测试跳过，其余测试仍须通过。CI 另外执行 `python evals/run_eval.py --dry-run`，不调用模型。docx 检查器、`evals/` 和 `python-docx` 都是**卫星（可选，不进 Skill 验证主路径）**。
+英文版见 [README.en.md](README.en.md)。
 
 ## 许可
 
