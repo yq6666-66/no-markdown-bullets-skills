@@ -8,6 +8,8 @@
 
 ### Changed
 
+Docs: Skill 显示名「去黑点」（人读表，非 frontmatter 键）与 Muse·WorkBuddy 宿主说明；剥除器行为不变。
+
 Docs: move CN/EN README language switch to the top (under the title) in `README.md` / `README.en.md`; body stays tip 53c55174 (discoverability / usage / trade-off).
 
 精简根 README（中文主 + 英文 `README.en.md`）：只保留简述、问题、功能、技术、用法；事实对齐 v3.2.0。GitHub About 建议文案见 PR 说明（合入后再改仓库 description）。
