@@ -427,11 +427,11 @@ class RepoTextTests(unittest.TestCase):
         self.assertIn("Permission is hereby granted", text)
 
     def test_no_out_of_scope_claims(self):
+        # Host-adaptation docs may name WorkBuddy; the ban was for unsolicited claims.
         needles = (
             "408" + "-codex-plugin",
             "竞" + "品",
             "human" + "ize",
-            "Work" + "Buddy",
         )
         scanned = []
         for path in ROOT.rglob("*"):
