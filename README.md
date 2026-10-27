@@ -1,8 +1,8 @@
-# no-markdown-bullets
+# 去黑点（no-markdown-bullets）
 
 [English](README.en.md)
 
-可复制的 Agent Skill：去掉面向读者正文里由 Markdown 无序列表渲染出的黑点；保留有序列表与表格。本仓独立交付，不修改、也不依赖其他插件仓库。版本以标签与 `CHANGELOG.md` 为准。
+可复制的 Agent Skill：去掉面向读者正文里由 Markdown 无序列表渲染出的黑点；保留有序列表与表格。本仓独立交付，不修改、也不依赖其他插件仓库。版本以标签与 `CHANGELOG.md` 为准。本仓约定中文名为「去黑点」；技能列表是否显示中文取决于宿主，点名仍可用 id `no-markdown-bullets`。
 
 ## 问题
 
@@ -14,6 +14,8 @@
 2. **保留**：有序列表、表格、代码块、分隔线、行内强调等。
 3. **例外**：用户当次明确要求保留 bullet 时，该次普通无序列表可以例外；任务列表不例外。
 4. **形态**：`skills/no-markdown-bullets/`（含 `SKILL.md`）+ `scripts/strip_md_ul.py`。不做文风润色、不做浏览器/Word 插件、不发 npm 包。**不承诺**宿主强制执行：文件放入 ≠ 已加载 ≠ 模型必遵守。
+
+对齐 tip `90b40d16` / v3.2.0 的实测样本包括：约 1.9 万字论文体正文、七组格式边界构造、人工 Word 项目符号样例、强列表体裁运维手册。**不承诺**任意宿主或模型 100%。
 
 ## 技术
 
@@ -53,6 +55,7 @@
    python scripts/strip_md_ul.py --dry-run input.md
    ```
 
-7. 禁 bullet 换来的扫读代价，以及管不到 Word / HTML 等下游，见 [`docs/扫读代价与下游边界.md`](docs/扫读代价与下游边界.md)。
+7. Muse / WorkBuddy 等宿主适配要点（转写、自定义指令常驻、不承诺硬强制），见 [`docs/宿主适配-Muse与WorkBuddy.md`](docs/宿主适配-Muse与WorkBuddy.md)。
+8. 禁 bullet 换来的扫读代价，以及管不到 Word / HTML 等下游，见 [`docs/扫读代价与下游边界.md`](docs/扫读代价与下游边界.md)。
 
 许可见 `LICENSE`（MIT）。

@@ -10,6 +10,7 @@ description: 去黑点、禁 Markdown 无序列表与任务列表（bullet）时
 | 字段 | 内容 |
 | --- | --- |
 | name | `no-markdown-bullets` |
+| 中文名 | 去黑点（显示用，非 frontmatter 键） |
 | description | 生成或改写面向读者的正文，且需要分点、步骤或对照时启用 |
 | 适用宿主与路径 | 见下一节。宿主必须支持读取 `SKILL.md`，并且要由人手工放置。具体版本上的发现测试标为待验证 |
 | 强制声明 | 不承诺宿主强制生效。文件放进目录，不等于模型会遵守 |
@@ -26,6 +27,8 @@ description: 去黑点、禁 Markdown 无序列表与任务列表（bullet）时
 | Cursor 用户目录 | `~/.cursor/skills/no-markdown-bullets/SKILL.md` | 同上 |
 | Codex 项目 | `<项目>/.codex/skills/no-markdown-bullets/SKILL.md` | 待验证 |
 | Codex 用户目录 | `~/.codex/skills/no-markdown-bullets/SKILL.md` | 待验证 |
+| Muse | 见 `docs/宿主适配-Muse与WorkBuddy.md` | 当次可按本文件写作；自定义包装需转写 |
+| WorkBuddy | 见 `docs/宿主适配-Muse与WorkBuddy.md` | 装目录后须把默认写法抄进自定义指令 |
 
 其他会读取 `SKILL.md` 的代理，放到它自己的 Skills 目录。放完仍要做下面的验证，不能只核对路径。
 

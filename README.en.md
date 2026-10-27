@@ -1,8 +1,8 @@
-# no-markdown-bullets
+# No Markdown Bullets (去黑点)
 
 [简体中文](README.md)
 
-A reusable agent skill that removes disc bullets rendered from reader-facing Markdown unordered lists, while keeping ordered lists and tables. This repo is a standalone docs + skill delivery; it does not modify or depend on other plugin repos. Versioning follows tags and `CHANGELOG.md`.
+A reusable agent skill that removes disc bullets rendered from reader-facing Markdown unordered lists, while keeping ordered lists and tables. This repo is a standalone docs + skill delivery; it does not modify or depend on other plugin repos. Versioning follows tags and `CHANGELOG.md`. The repo’s Chinese name is 去黑点; whether a host skill list shows Chinese depends on the host. Call-out still works with id `no-markdown-bullets`.
 
 ## Problem
 
@@ -14,6 +14,8 @@ Models often emit unordered lists that start with `-` / `*` / `+` plus whitespac
 2. **Kept**: ordered lists, tables, code blocks, thematic breaks, inline emphasis, and similar.
 3. **Exception**: when the user clearly asks to keep bullets in that turn, ordinary UL may stay; task lists may not.
 4. **Shape**: `skills/no-markdown-bullets/` (with `SKILL.md`) plus `scripts/strip_md_ul.py`. No prose polish, no browser/Word plug-in, no npm package. Host enforcement is **not** promised: files on disk ≠ loaded ≠ obeyed.
+
+Field evidence aligned to tip `90b40d16` / v3.2.0 includes an ~19k-character thesis-style body, seven format-boundary suites, a hand-made Word bullet docx, and a list-heavy operations manual. This does **not** promise 100% on any host or model.
 
 ## Technology
 
@@ -53,6 +55,7 @@ Models often emit unordered lists that start with `-` / `*` / `+` plus whitespac
    python scripts/strip_md_ul.py --dry-run input.md
    ```
 
-7. For the scan-cost trade-off of banning bullets, and what this Skill does not cover downstream (Word / HTML), see [`docs/扫读代价与下游边界.md`](docs/扫读代价与下游边界.md).
+7. Muse / WorkBuddy host notes (rewrite packaging, standing custom instructions, no hard enforcement promise): [`docs/宿主适配-Muse与WorkBuddy.md`](docs/宿主适配-Muse与WorkBuddy.md).
+8. For the scan-cost trade-off of banning bullets, and what this Skill does not cover downstream (Word / HTML), see [`docs/扫读代价与下游边界.md`](docs/扫读代价与下游边界.md).
 
 License: MIT (`LICENSE`).

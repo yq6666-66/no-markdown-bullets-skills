@@ -6,6 +6,8 @@
 
 说明：本文与 README 描述用法与安装；`skills/no-markdown-bullets/SKILL.md` 正文未改。
 
+Muse 与 WorkBuddy 的适配要点见 `docs/宿主适配-Muse与WorkBuddy.md`。分支 `docs/install-guide` 不是安装与验证的 Source of Truth。安装说明以 main 上的 `docs/install.md` 为准。
+
 ## 快速开始
 
 1. 在下面的位置表里选一个位置。项目级和全局级不要各放一份。也可以不依赖宿主目录，直接把 Skill 目录交给目标 AI。
