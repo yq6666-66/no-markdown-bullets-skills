@@ -314,8 +314,7 @@ class CommandTests(unittest.TestCase):
             self.assertEqual(proc.stdout, b"")
             self.assertIn(b"error:", proc.stderr)
 
-    def test_version_flag_prints_331_and_exits_zero(self):
-        self.assertEqual(strip_md_ul.__version__, "3.3.1")
+    def test_version_flag_prints_version_and_exits_zero(self):
         proc = subprocess.run(
             [sys.executable, str(SCRIPT), "--version"],
             stdout=subprocess.PIPE,
@@ -323,7 +322,9 @@ class CommandTests(unittest.TestCase):
             check=False,
         )
         self.assertEqual(proc.returncode, 0)
-        self.assertEqual(proc.stdout, b"strip_md_ul.py 3.3.1\n")
+        stdout = proc.stdout.replace(b"\r\n", b"\n").decode("utf-8")
+        expected = f"strip_md_ul.py {strip_md_ul.__version__}\n"
+        self.assertEqual(stdout, expected)
         self.assertEqual(proc.stderr, b"")
         help_proc = subprocess.run(
             [sys.executable, str(SCRIPT), "--help"],
