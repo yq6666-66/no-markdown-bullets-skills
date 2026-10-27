@@ -1,5 +1,7 @@
 # no-markdown-bullets
 
+[English](README.en.md)
+
 可复制的 Agent Skill：去掉面向读者正文里由 Markdown 无序列表渲染出的黑点；保留有序列表与表格。本仓独立交付，不修改、也不依赖其他插件仓库。版本以标签与 `CHANGELOG.md` 为准。
 
 ## 问题
@@ -53,4 +55,4 @@
 
 7. 禁 bullet 换来的扫读代价，以及管不到 Word / HTML 等下游，见 [`docs/扫读代价与下游边界.md`](docs/扫读代价与下游边界.md)。
 
-英文版见 [README.en.md](README.en.md)。许可见 `LICENSE`（MIT）。
+许可见 `LICENSE`（MIT）。
