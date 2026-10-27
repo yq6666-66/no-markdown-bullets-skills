@@ -52,8 +52,9 @@ Skill 不管 HTML `<ul>`，不管网站 CSS，也不做文风润色。
 | `--dry-run` | 与默认相同的全文 | 不写，并在 stderr 追加 `info: dry-run source-not-modified` |
 | `--report PATH` | 与是否 `--check` 有关，规则同上 | 不写。JSON 写到 PATH |
 | `--report -` | 与是否 `--check` 有关，规则同上 | 不写。JSON 写到 stderr，不再混入人类可读诊断 |
+| `--version` | `strip_md_ul.py 3.3.1` 后以退出码 0 结束 | 不读、不写 |
 
-`--check` 和 `--dry-run` 不能同时用。`--report` 可以和二者之一同用。脚本没有把结果写回文件的参数，也没有保留 bullet 或保留任务列表的参数。JSON 报告禁止写到 stdout。stdout 始终只可能是改写正文或空。
+`--check` 和 `--dry-run` 不能同时用。`--report` 可以和二者之一同用。`--version` 打印版本号后结束，不读取输入。脚本没有把结果写回文件的参数，也没有保留 bullet 或保留任务列表的参数。JSON 报告禁止写到 stdout。除 `--version` 的版本行外，stdout 只可能是改写正文或空。
 
 退出码：
 
@@ -82,7 +83,7 @@ Skill 不管 HTML `<ul>`，不管网站 CSS，也不做文风润色。
 | 字段 | 含义 |
 | --- | --- |
 | `tool` | 固定 `strip_md_ul` |
-| `version` | 当前是 `3.1.0` |
+| `version` | 当前是 `3.3.1` |
 | `source` | 输入路径；stdin 时为 `<stdin>` |
 | `exit_code` | 与进程退出码相同，只可能是 `0`、`2`、`1` |
 | `stripped_lines` | 被剥 UL 的输入行号 |
