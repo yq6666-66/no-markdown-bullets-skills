@@ -25,30 +25,31 @@
 1. **推荐**：把 `skills/no-markdown-bullets/` 整目录交给对应 AI，说明按 `SKILL.md` 自适配。不以宿主 Skill 列表截图或 Discovery 为使用门槛。
 2. **自定义指令（常驻）**：把下列「默认写法」原文抄进宿主自定义指令 / system 区（与 `SKILL.md` 一致，不可改义）：
 
-生成给人看的 Markdown，或将粘贴到 GitHub、聊天、Word 的正文时：
+   生成给人看的 Markdown，或将粘贴到 GitHub、聊天、Word 的正文时：
 
-1. 叙述、解释和结论写成普通段落。
-2. 步骤、顺序和需要逐条引用的内容写成编号列表。
-3. 字段对齐的对照写成表格。聊天客户端不支持表格时，改成编号列表，每条写成「字段：值」。
-4. 没有顺序、又不必编号的短项，拆成独立段落。
+   1. 叙述、解释和结论写成普通段落。
+   2. 步骤、顺序和需要逐条引用的内容写成编号列表。
+   3. 字段对齐的对照写成表格。聊天客户端不支持表格时，改成编号列表，每条写成「字段：值」。
+   4. 没有顺序、又不必编号的短项，拆成独立段落。
 
-不要先写出无序列表再替换符号。把连字符换成星号或加号，得到的仍是无序列表。
+   不要先写出无序列表再替换符号。把连字符换成星号或加号，得到的仍是无序列表。
 
 3. **显式点名**：对话里点名 `no-markdown-bullets` 时，应读本仓 `SKILL.md`，并在仓库根目录对模型可见正文执行：
 
-```bash
-python scripts/strip_md_ul.py --check --report - body.md
-```
+   ```bash
+   python scripts/strip_md_ul.py --check --report - body.md
+   ```
 
-通过须同时满足：退出码 `0`，报告 `stripped=0`，且 `summary.suppression_blocks == 0`。
+   通过须同时满足：退出码 `0`，报告 `stripped=0`，且 `summary.suppression_blocks == 0`。
+
 4. **强列表体裁例外**：产品文档、会议纪要等强列表体裁，用户当次明确要求保留 bullet 时，该次普通无序列表可以例外；任务列表仍禁止。
 5. （可选）也可复制到宿主 Skills 目录；常见路径见 `docs/install.md`。列不出也不妨碍使用。
 6. 脚本默认把改写结果写到标准输出，不修改源文件：
 
-```bash
-python scripts/strip_md_ul.py input.md
-python scripts/strip_md_ul.py --dry-run input.md
-```
+   ```bash
+   python scripts/strip_md_ul.py input.md
+   python scripts/strip_md_ul.py --dry-run input.md
+   ```
 
 7. 禁 bullet 换来的扫读代价，以及管不到 Word / HTML 等下游，见 [`docs/扫读代价与下游边界.md`](docs/扫读代价与下游边界.md)。
 

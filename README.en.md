@@ -25,30 +25,31 @@ Models often emit unordered lists that start with `-` / `*` / `+` plus whitespac
 1. **Recommended**: hand `skills/no-markdown-bullets/` to the target AI and ask it to follow `SKILL.md`. Host skill-list screenshots and Discovery are not a usage gate.
 2. **Custom instructions (standing)**: copy the following “default writing” rules into the host custom instructions / system area (same meaning as `SKILL.md`; do not change the sense):
 
-When generating reader-facing Markdown, or body text that will be pasted into GitHub, chat, or Word:
+   When generating reader-facing Markdown, or body text that will be pasted into GitHub, chat, or Word:
 
-1. Write narration, explanation, and conclusions as ordinary paragraphs.
-2. Write steps, sequences, and items you need to cite one by one as numbered lists.
-3. Write field-aligned comparisons as tables. If the chat client has no tables, use a numbered list with each item as `field: value`.
-4. Split short items that have no order and need no numbering into separate paragraphs.
+   1. Write narration, explanation, and conclusions as ordinary paragraphs.
+   2. Write steps, sequences, and items you need to cite one by one as numbered lists.
+   3. Write field-aligned comparisons as tables. If the chat client has no tables, use a numbered list with each item as `field: value`.
+   4. Split short items that have no order and need no numbering into separate paragraphs.
 
-Do not draft an unordered list and then swap markers. Replacing hyphens with asterisks or plus signs still yields an unordered list.
+   Do not draft an unordered list and then swap markers. Replacing hyphens with asterisks or plus signs still yields an unordered list.
 
 3. **Explicit call-out**: when the user names `no-markdown-bullets` in chat, read this repo’s `SKILL.md`, and from the repository root check the visible model body:
 
-```bash
-python scripts/strip_md_ul.py --check --report - body.md
-```
+   ```bash
+   python scripts/strip_md_ul.py --check --report - body.md
+   ```
 
-Pass requires exit code `0`, report `stripped=0`, and `summary.suppression_blocks == 0`.
+   Pass requires exit code `0`, report `stripped=0`, and `summary.suppression_blocks == 0`.
+
 4. **Strong-list genre exception**: for product docs, meeting notes, and similar list-heavy genres, when the user clearly asks to keep bullets in that turn, ordinary unordered lists may stay; task lists may not.
 5. Optionally copy into a host skills directory; common paths are in `docs/install.md`. Missing from a discovery list does not block use.
 6. By default the script writes the rewrite to stdout and does not modify the source:
 
-```bash
-python scripts/strip_md_ul.py input.md
-python scripts/strip_md_ul.py --dry-run input.md
-```
+   ```bash
+   python scripts/strip_md_ul.py input.md
+   python scripts/strip_md_ul.py --dry-run input.md
+   ```
 
 7. For the scan-cost trade-off of banning bullets, and what this Skill does not cover downstream (Word / HTML), see [`docs/扫读代价与下游边界.md`](docs/扫读代价与下游边界.md).
 
