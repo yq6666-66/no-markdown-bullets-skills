@@ -6,6 +6,8 @@
 
 ## Unreleased
 
+## 3.3.0
+
 ### Changed
 
 Docs: add short Muse / WorkBuddy application-instance results in README.md / README.en.md.
