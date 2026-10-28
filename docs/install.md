@@ -4,7 +4,7 @@
 
 **推荐用法**：把本仓库的 Skill（`skills/no-markdown-bullets/` 整目录，含 `SKILL.md`）丢给对应 AI / 助手，由对方按 `SKILL.md` 自行适配。下表是各宿主常见放置路径，仅供参考。不以「宿主 Skill 列表截图 / 列出可见 Skill」为使用门槛；Discovery 不作门槛。文件放进目录，不等于宿主已经加载，也不等于模型会遵守；本仓库不承诺宿主强制执行。
 
-说明：本文与 README 描述用法与安装；`skills/no-markdown-bullets/SKILL.md` 正文未改。
+说明：用法与安装见本文和 README。Skill 约定以 `skills/no-markdown-bullets/SKILL.md` 为准。
 
 Muse 与 WorkBuddy 的适配要点见 `docs/宿主适配-Muse与WorkBuddy.md`。分支 `docs/install-guide` 不是安装与验证的 Source of Truth。安装说明以 main 上的 `docs/install.md` 为准。
 
@@ -40,13 +40,15 @@ scripts/check_docx_numbering.py
 
 项目级只影响当前项目。全局级通常作用于该工具打开的项目。同一工具里不要同时放两份。
 
+建议放置是项目里的 `.agents/skills/no-markdown-bullets`，或用户目录里的 `~/.agents/skills/no-markdown-bullets`。`.codex/skills` 只作兼容与历史路径。Codex 是否读取 `.agents/skills` 或 `.codex/skills` 以安装版本为准。
+
 | 工具 | 项目级 | 全局级 | 说明 |
 | --- | --- | --- | --- |
 | Cursor | `.cursor/skills/no-markdown-bullets` | `~/.cursor/skills/no-markdown-bullets` | 常见放置（路径示例） |
-| Codex | `.codex/skills/no-markdown-bullets` | `~/.codex/skills/no-markdown-bullets` | 常见放置（路径示例） |
+| Codex | `.codex/skills/no-markdown-bullets` | `~/.codex/skills/no-markdown-bullets` | 兼容与历史路径。是否仍读取以安装版本为准 |
 | OpenCode | `.opencode/skills/no-markdown-bullets` | `~/.config/opencode/skills/no-markdown-bullets` | 常见放置（路径示例） |
 | Claude Code | `.claude/skills/no-markdown-bullets` | `~/.claude/skills/no-markdown-bullets` | 常见放置（路径示例） |
-| 跨工具共享 | `.agents/skills/no-markdown-bullets` | `~/.agents/skills/no-markdown-bullets` | 常见放置（路径示例） |
+| 跨工具共享 | `.agents/skills/no-markdown-bullets` | `~/.agents/skills/no-markdown-bullets` | 建议放置 |
 
 ### 操作系统路径
 
@@ -61,11 +63,11 @@ scripts/check_docx_numbering.py
 | --- | --- |
 | 只在一个项目里试 | 该工具的项目级 |
 | 多个项目只用一个工具 | 该工具的全局级 |
-| 几个工具想共用一份 Skill | 跨工具共享位置 `.agents/skills` |
+| 几个工具想共用一份 Skill | 建议放在 `.agents/skills/no-markdown-bullets` |
 | 试完就要拆掉 | 单独的试验项目，用项目级 |
 | 不依赖宿主目录 | 把 `skills/no-markdown-bullets/` 整目录交给目标 AI |
 
-OpenCode 除了自己的目录，也会读取 `.claude/skills` 和 `.agents/skills`。Codex 是否读取 `.agents/skills` 以你安装的版本为准；路径仅供参考，不要只对照旧笔记。
+OpenCode 除了自己的目录，也会读取 `.claude/skills` 和 `.agents/skills`。建议放置仍是 `.agents/skills/no-markdown-bullets`。`.codex/skills` 是兼容与历史路径。Codex 是否读取这些目录以安装版本为准；路径仅供参考，不要只对照旧笔记。
 
 ## 安装步骤
 
@@ -162,7 +164,7 @@ python scripts/check_docx_numbering.py --format json report.docx
 
 ## 常见问题
 
-1. 问：只装到一个工具里，别的工具会不会自动生效。答：不会。每个工具读自己的位置。想共用时用 `.agents/skills`，或分别把 Skill 交给各工具侧的 AI。
+1. 问：只装到一个工具里，别的工具会不会自动生效。答：不会。每个工具读自己的位置。想共用一份时，建议放在 `.agents/skills`。`.codex/skills` 是兼容与历史路径。也可以分别把 Skill 交给各工具侧的 AI。
 2. 问：装完不用新开会话行不行。答：新开会话更有利于工具侧加载，但不是硬门槛；也可直接把 Skill 目录交给 AI。
 3. 问：`--check` 返回 0 是不是安装失败。答：不是。0 表示结果里没有残留 UL。源文件是不是本来就干净，还要看 `stripped=0`。
 4. 问：旧文档里的无序列表会自动消失吗。答：不会。脚本只把改写结果写到 stdout，不改源文件。退出码是 1 时不要把 stdout 写回去。

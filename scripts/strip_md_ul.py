@@ -18,7 +18,10 @@
 4. HTML 原始块整块不改。pre/script/style/textarea、注释、处理指令、声明、CDATA
    未闭合时跳到 EOF 并告警；块级标签直到空行（空行本身原样输出）。
 5. 表格整块不改，包含单元格里的 ``-``。
-6. 主题分隔线（``---`` / ``***`` / ``* * *`` / ``- - -`` / ``+ + +`` 以及下划线）先于 UL 识别。
+6. 主题分隔线（``---`` / ``***`` / ``* * *`` / ``- - -`` 以及下划线）先于 UL 识别，原样保留。
+   ``+`` 不是主题分隔标记。围栏外，剥掉引用前缀和不超过 3 列的缩进后，若该行只剩
+   ``+`` 与空白且 ``+`` 不少于三个，整行改成空行（引用前缀一并去掉）。
+   恰好两个加号的 ``+ +`` 仍走 UL，不改成空行。
 7. 列表紧邻续行优先于缩进代码。引用深度变化时，丢掉不属于当前引用层的列表帧：
    进入更深引用会结束外侧列表，回到更浅处会结束深处的列表。
    只有非列表上下文，且绝对缩进 ≥4 空格或 1 个 Tab，才保护为缩进代码。空行中断紧邻续行。
@@ -44,7 +47,7 @@ __version__ = "3.3.1"
 
 
 UL_MARKERS = "-*+"
-THEMATIC_MARKERS = "-*+_"
+THEMATIC_MARKERS = "-*_"
 BLOCK_TAGS = sorted(
     {
         "address",
@@ -319,6 +322,28 @@ def is_thematic_break(rest: str) -> bool:
     return count >= 3
 
 
+def is_plus_only_line(rest: str) -> bool:
+    """引用前缀已剥。缩进达到 4 列时是缩进代码，返回 False。
+
+    其余部分只含 ``+`` 与空白，且 ``+`` 不少于 3 个时返回 True。
+    这种行要改成空行，不能再当成主题分隔线留下。恰好两个 ``+`` 返回 False，
+    仍交给 UL。
+    """
+    cols, index = measure_indent(rest)
+    if cols >= 4:
+        return False
+    count = 0
+    seen = False
+    for char in rest[index:]:
+        if char in " \t":
+            continue
+        seen = True
+        if char != "+":
+            return False
+        count += 1
+    return seen and count >= 3
+
+
 def parse_ul(after: str) -> tuple[str, str, str, str] | None:
     if not after or after[0] not in UL_MARKERS:
         return None
@@ -585,6 +610,14 @@ class _Parser:
         if self._try_open_fence(index, rest, quote_depth):
             return index + 1
         if self._try_open_html(index, rest, quote_depth):
+            return index + 1
+        if is_plus_only_line(rest):
+            # 围栏、HTML、抑制区和 front matter 已在上面原样抄走。
+            self.stack.clear()
+            self.tight = False
+            self.in_code = False
+            self.out.append(("", self.lines[index][1]))
+            self.stripped_lines.append(index + 1)
             return index + 1
         if is_thematic_break(rest):
             self.stack.clear()

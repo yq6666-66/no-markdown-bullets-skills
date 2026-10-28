@@ -19,14 +19,16 @@ description: 去黑点、禁 Markdown 无序列表与任务列表（bullet）时
 
 ## 适用宿主与放置路径
 
-手工复制整个目录 `skills/no-markdown-bullets/`，其中必须有本文件。
+手工复制整个目录 `skills/no-markdown-bullets/`，其中必须有本文件。建议放置是 `.agents/skills/no-markdown-bullets`。`.codex/skills` 是兼容与历史路径，是否仍被读取以安装版本为准。
 
 | 宿主 | 放置路径 | 状态 |
 | --- | --- | --- |
 | Cursor 项目 | `<项目>/.cursor/skills/no-markdown-bullets/SKILL.md` | 路径按常见放置方式书写，发现结果待验证 |
 | Cursor 用户目录 | `~/.cursor/skills/no-markdown-bullets/SKILL.md` | 同上 |
-| Codex 项目 | `<项目>/.codex/skills/no-markdown-bullets/SKILL.md` | 待验证 |
-| Codex 用户目录 | `~/.codex/skills/no-markdown-bullets/SKILL.md` | 待验证 |
+| 建议放置（项目） | `<项目>/.agents/skills/no-markdown-bullets/SKILL.md` | 建议放置。发现结果待验证，是否读取以宿主版本为准 |
+| 建议放置（用户目录） | `~/.agents/skills/no-markdown-bullets/SKILL.md` | 同上 |
+| Codex 项目（兼容） | `<项目>/.codex/skills/no-markdown-bullets/SKILL.md` | 兼容与历史路径。是否仍读取以安装版本为准，发现结果待验证 |
+| Codex 用户目录（兼容） | `~/.codex/skills/no-markdown-bullets/SKILL.md` | 同上 |
 | Muse | 见 `docs/宿主适配-Muse与WorkBuddy.md` | 当次可按本文件写作；自定义包装需转写 |
 | WorkBuddy | 见 `docs/宿主适配-Muse与WorkBuddy.md` | 装目录后须把默认写法抄进自定义指令 |
 
@@ -78,7 +80,7 @@ description: 去黑点、禁 Markdown 无序列表与任务列表（bullet）时
 2. Markdown 表格。
 3. 围栏代码（三个反引号或 `~~~`）、缩进代码，以及围栏里的 JSON。
 4. 文件开头且成对闭合的 YAML front matter，以及同样位置、中间没有空行、200 行窗口内闭合的 TOML front matter。闭合条件以 `docs/规则与边界.md` 为准。
-5. 主题分隔线，例如 `---`、`***`、`* * *`、`- - -`、`+ + +`。
+5. 主题分隔线，例如 `---`、`***`、`* * *`、`- - -`，以及同样形状的下划线。整行只有 `+` 与空白、且加号不少于三个的行（例如 `+ + +`）不再当作分隔线保留，围栏外会剥成空行。
 6. 行内强调，例如一句中间的 `*强调*`。和列表的差别是：列表标记后面有空格或 Tab。
 7. `•` 和 `·` 是普通字符，不是 CommonMark 的列表标记。本约定不把它们当成 UL，也不承诺把它们从正文里删掉。
 

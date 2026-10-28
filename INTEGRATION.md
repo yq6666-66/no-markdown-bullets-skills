@@ -34,7 +34,7 @@
 | --- | --- |
 | `name` | 固定为 `no-markdown-bullets`。宿主若靠 front matter 发现 Skill，用这个名字 |
 | `description` | 说明何时启用：生成或改写面向读者的正文，且需要分点、步骤或对照 |
-| 放置路径 | 复制整个目录，不要只复制正文进系统提示后就把原文件扔掉。Cursor 与 Codex 的路径写在 Skill 正文和 README 里，发现结果都是待验证 |
+| 放置路径 | 复制整个目录，不要只复制正文进系统提示后就把原文件扔掉。建议放置是 `.agents/skills/no-markdown-bullets`。`.codex/skills` 是兼容与历史路径，是否读取以安装版本为准。发现结果待验证 |
 | 强制声明 | 集成方不能把「文件已复制」写成「宿主已强制执行」 |
 | 验证 | 先看宿主的 Skill 名单，再显式调用，再对模型正文跑 `--check`。通过线是退出码 `0`、`stripped=0`，且没有抑制区（`--report` 的 `summary.suppression_blocks` 为 `0`，或正文里没有 `no-markdown-bullets:`）。人工源文件仍可使用抑制区。docx、evals、`python-docx` 不在这条线里 |
 | 例外 | 只允许用户当次明确要求的普通 UL。任务列表没有例外 |
@@ -199,7 +199,7 @@ if result.exit_code != 0:
 skills/no-markdown-bullets/   →   <项目>/.cursor/skills/no-markdown-bullets/
 ```
 
-用户级 Cursor 目录是 `~/.cursor/skills/no-markdown-bullets/`。Codex 的对应目录是 `<项目>/.codex/skills/no-markdown-bullets/` 和 `~/.codex/skills/no-markdown-bullets/`。复制后按 README 的三步做发现和显式调用。发现没有做完时，集成记录里写待验证。
+用户级 Cursor 目录是 `~/.cursor/skills/no-markdown-bullets/`。建议放置是 `<项目>/.agents/skills/no-markdown-bullets/` 和 `~/.agents/skills/no-markdown-bullets/`。`<项目>/.codex/skills/no-markdown-bullets/` 与 `~/.codex/skills/no-markdown-bullets/` 是兼容与历史路径，是否仍被读取以安装版本为准。发现结果待验证。
 
 命令在仓库根目录执行：
 
