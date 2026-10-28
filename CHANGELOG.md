@@ -6,6 +6,8 @@
 
 ## [Unreleased]
 
+## 3.3.2
+
 ### Added
 
 Docs: 新增 `docs/宿主外部实测索引.md`（外部实测索引；不宣称新一轮算法或脚本实测），并自 `docs/宿主适配-Muse与WorkBuddy.md` 与 README 中、英实例节链入。
