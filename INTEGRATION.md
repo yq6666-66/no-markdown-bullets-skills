@@ -41,7 +41,7 @@
 
 本仓当前 frontmatter 仅使用 `name` 与 `description`；不要新增未经验证的 `display_name` 等键冒充列表中文名已支持。中文显示名属宿主能力，见 `docs/宿主适配-Muse与WorkBuddy.md`。
 
-Skill 不管 HTML `<ul>`，不管网站 CSS，也不做文风润色。
+Skill 不管 HTML `<ul>`，不管网站 CSS，也不做文风润色。剥后语义、体裁判断、HTML / CSS / Word 自动编号属主路径**设计边界**（非脚本侧可修缺陷）；`stripped>0` 须人工改写再验。docx 检查器为卫星，退出码勿与主剥除器混读。
 
 ### 脚本 CLI
 
