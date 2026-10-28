@@ -39,6 +39,8 @@
 | 验证 | 先看宿主的 Skill 名单，再显式调用，再对模型正文跑 `--check`。通过线是退出码 `0`、`stripped=0`，且没有抑制区（`--report` 的 `summary.suppression_blocks` 为 `0`，或正文里没有 `no-markdown-bullets:`）。人工源文件仍可使用抑制区。docx、evals、`python-docx` 不在这条线里 |
 | 例外 | 只允许用户当次明确要求的普通 UL。任务列表没有例外 |
 
+本仓当前 frontmatter 仅使用 `name` 与 `description`；不要新增未经验证的 `display_name` 等键冒充列表中文名已支持。中文显示名属宿主能力，见 `docs/宿主适配-Muse与WorkBuddy.md`。
+
 Skill 不管 HTML `<ul>`，不管网站 CSS，也不做文风润色。
 
 ### 脚本 CLI
