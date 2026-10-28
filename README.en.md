@@ -68,4 +68,6 @@ Short results from v3.2.0 materials already in-repo. Files on disk do not mean t
 
 See [`docs/宿主适配-Muse与WorkBuddy.md`](docs/宿主适配-Muse与WorkBuddy.md).
 
+For an index of external host-eval notes on additional hosts (Doubao, ZCode, Qoder, Grok Bot, Cursor, GPT, and others), see [`docs/宿主外部实测索引.md`](docs/宿主外部实测索引.md). It collects archived conclusions for reference; it is **not** a new round of algorithm or script testing in this release.
+
 License: MIT (`LICENSE`).

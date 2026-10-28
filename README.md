@@ -68,4 +68,6 @@
 
 细节见 [`docs/宿主适配-Muse与WorkBuddy.md`](docs/宿主适配-Muse与WorkBuddy.md)。
 
+更多宿主（豆包 / ZCode / Qoder / Grok Bot / Cursor / GPT 等）的外部实测结论索引见 [`docs/宿主外部实测索引.md`](docs/宿主外部实测索引.md)（索引归档结论，**非**本版新一轮算法或脚本实测）。
+
 许可见 `LICENSE`（MIT）。
