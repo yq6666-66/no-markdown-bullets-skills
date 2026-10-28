@@ -125,6 +125,8 @@ python scripts/strip_md_ul.py < input.md
 
 这一节是**卫星（可选，不进 Skill 验证主路径）**。`scripts/check_docx_numbering.py` 只报告 `.docx` 里解析成 bullet 的段落，不改写文件，也不处理 Markdown。它的退出码和剥除器不同，不要混用。
 
+两个脚本的 `__version__` 独立演进，真源是各自源码里的 `__version__`，不要用主剥除器版本推断检查器。截至本 tip（`2e274e18`），剥除器是 `3.3.1`，本检查器是 `0.1.0`；两号不一致不是缺陷。只读核对：`python scripts/check_docx_numbering.py --version`（截至本 tip 打印 `check_docx_numbering 0.1.0`，退出码 0）。展开说明见 `INTEGRATION.md` 的「docx 检查器」。模型正文通过线仍以「首次使用自测」为准，不在这里重写。
+
 | 退出码 | 含义 |
 | --- | --- |
 | 0 | 没有 bullet 编号 |

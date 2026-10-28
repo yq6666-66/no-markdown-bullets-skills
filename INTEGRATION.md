@@ -56,6 +56,8 @@ Skill 不管 HTML `<ul>`，不管网站 CSS，也不做文风润色。
 
 `--check` 和 `--dry-run` 不能同时用。`--report` 可以和二者之一同用。`--version` 打印版本号后结束，不读取输入。脚本没有把结果写回文件的参数，也没有保留 bullet 或保留任务列表的参数。JSON 报告禁止写到 stdout。除 `--version` 的版本行外，stdout 只可能是改写正文或空。
 
+这里的 `__version__` 和 `--version` 只属于 `strip_md_ul.py`。`check_docx_numbering.py` 的 `__version__` 单独演进，见「docx 检查器」。
+
 退出码：
 
 | 码 | 含义 | 调用方 |
@@ -117,11 +119,22 @@ Front matter 的缺口按遮罩补齐：TOML `+++`、中间空行则整段不算
 
 它的退出码和剥除器不同：`0` 没有 bullet 编号，`1` 发现了 bullet 编号，`2` 读不了。集成时不要把这里的 `1` 当成剥除器的失败，也不要把它的 stdout 当成改写正文。`--format json` 是这个检查器自己的输出，因为这个工具本来就没有改写正文。
 
+版本号也独立。真源是各脚本源码里的 `__version__`，不要用主剥除器的发版号推断本检查器。截至本 tip（`2e274e18`）：`scripts/strip_md_ul.py` 的 `__version__` 是 `3.3.1`，`scripts/check_docx_numbering.py` 的 `__version__` 是 `0.1.0`。两号不一致不是缺陷。下面两条只读核对不读正文、不改文件，并以退出码 0 结束：
+
+```bash
+python scripts/strip_md_ul.py --version
+python scripts/check_docx_numbering.py --version
+```
+
+截至本 tip，前者打印 `strip_md_ul.py 3.3.1`，后者打印 `check_docx_numbering 0.1.0`。以后以 `__version__` 为准。退出码语义仍按上一段区分，不因为版本号不同而合并。
+
 ### evals
 
 目录：`evals/`。八条固定提示在 `prompts.json`。子弹数来自 `strip_text` 的 `stripped_lines`，被保留的区域不计入。
 
 CI 只执行 `python evals/run_eval.py --dry-run`，并靠单元测试检查提示集结构。不要往默认 CI 加会调用模型的任务。手动对照见 `evals/README.md`。
+
+默认仓库 CI（单元测试 + `python evals/run_eval.py --dry-run`）不是宿主交付门禁。门禁示例见 §4，通过口径见 §5.1，不要在这里另写一套。
 
 ### 安装
 
@@ -223,14 +236,44 @@ python scripts/strip_md_ul.py input.md > input.stripped.md
 echo $?
 ```
 
-只有退出码是 `0` 时，才把 `input.stripped.md` 当作可用正文。退出码是 `2` 时先看 stderr 里的未闭合位置。退出码是 `1` 时删除这个输出。
+只有退出码是 `0` 时，才把 `input.stripped.md` 当作可用正文。退出码是 `2` 时先看 stderr 里的未闭合位置。退出码是 `1` 时删除这个输出。上面这段只用于交互分诊，先看 `echo $?`。它不是交付门禁。
+
+**交付 / 宿主门禁。** 通过口径不在这里重写，见 §5.1；退出码 `0` 不等于输入干净，见 §5.4。先把进程退出码记入 `rc`，再读 `--report` 里的 `summary.stripped` 与 `summary.suppression_blocks`，三项都要断言。不要用 `&&` 在非 0 时短路，以免看不到原来的 `rc`。不要用 `命令 | grep` 当门禁。`suppression_blocks` 必须为 `0`。
+
+```bash
+python scripts/strip_md_ul.py --check --report report.json body.md
+rc=$?
+echo "rc=$rc"
+python - "$rc" report.json <<'PY'
+import json
+import sys
+
+rc = int(sys.argv[1])
+summary = json.load(open(sys.argv[2], encoding="utf-8"))["summary"]
+stripped = summary["stripped"]
+blocks = summary["suppression_blocks"]
+print("rc=%s stripped=%s suppression_blocks=%s" % (rc, stripped, blocks))
+ok = True
+if rc != 0:
+    ok = False
+if stripped != 0:
+    ok = False
+if blocks != 0:
+    ok = False
+sys.exit(0 if ok else 1)
+PY
+```
+
+若 `report.json` 没有写成，剥除器在写报告之前就退出了。以已经记下的 `rc` 为准，不要把随后的解析错误当成剥除器的退出码。
 
 ## 5. 注意事项
 
-1. 宿主不强制。复制 Skill 只是让支持该机制的工具有机会读到约定。集成完成的标志是 Skill 名单里出现名字，加上一次显式调用后模型正文满足 `--check` 退出码 `0`、`stripped=0`、且没有抑制区。不是文件已经存在。人工源文件仍可使用抑制区。
+下面第 1 条是模型正文通过线（§5.1）。第 4 条只说明退出码 `0` 不等于输入干净（§5.4）。交付门禁示例见 §4，不要把那里的 `echo $?` 当成 §5.1。
+
+1. 宿主不强制。复制 Skill 只是让支持该机制的工具有机会读到约定。集成完成的标志是 Skill 名单里出现名字，加上一次显式调用后模型正文满足 `--check` 退出码 `0`、`stripped=0`、且没有抑制区。不是文件已经存在。人工源文件仍可使用抑制区。`--report` 里要看的是 `summary.suppression_blocks == 0`，不能放宽。交互分诊的 `echo $?` 不是这条通过线。
 2. 任务列表没有例外，也没有保留开关。即使用户说保留 bullet，`- [ ]` 和 `- [x]` 仍要改成纯文本，并且不能宣称勾选还在。这种「当次保留普通 UL」的输出不要送进脚本，脚本会把普通 UL 也剥掉。
 3. 例外只覆盖用户当次明确提出的那一份普通 UL，不写成全局偏好，也不要做成配置文件里的默认项。
-4. 退出码 `0` 表示结果干净，不表示输入干净。`--check` 同样如此，它只是不把正文打出来。
+4. 退出码 `0` 表示结果干净，不表示输入干净。`--check` 同样如此，它只是不把正文打出来。宿主交付不能停在本条，完整口径是 §5.1，示例见 §4。
 5. 未闭合围栏会跳过开栏之后的全部文本，后面的正文 UL 也不会剥，退出码为 `2`。调用方应先补闭合围栏，不要把跳过当成已检查通过。
 6. 空行会打断列表的紧邻续行。空行之后、缩进大于等于 4、形如列表的行会当作缩进代码保留。这是 fixture 钉死的规则，不是「凡是看起来像 `- item` 的行都剥」。
 7. 不保证语义等价。`- # 标题` 会变成标题。失败结果不保证再跑一次还相同，例如 `- - still`。
@@ -247,4 +290,4 @@ echo $?
 python -m unittest discover -s tests -v
 ```
 
-全部通过才算脚本和 fixtures 的验收通过。Skill 的宿主发现不在这条命令里，状态保持待验证。
+全部通过才算脚本和 fixtures 的验收通过。默认仓库 CI 还要加上 `python evals/run_eval.py --dry-run`。这两步都不是宿主交付门禁，见 §4 与 §5.1。Skill 的宿主发现不在这条命令里，状态保持待验证。
