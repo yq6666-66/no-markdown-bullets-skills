@@ -55,19 +55,29 @@ External field evidence aligned to tip `90b40d16` / v3.2.0 includes an ~19k-char
    python scripts/strip_md_ul.py --dry-run input.md
    ```
 
-7. Muse / WorkBuddy how-to and short results are under “Examples in other AI apps” below; full limits: [`docs/宿主适配-Muse与WorkBuddy.md`](docs/宿主适配-Muse与WorkBuddy.md).
+7. How-to and archived short results for each host are under “Examples in other AI apps” below; full Muse / WorkBuddy limits: [`docs/宿主适配-Muse与WorkBuddy.md`](docs/宿主适配-Muse与WorkBuddy.md); eight-host index: [`docs/宿主外部实测索引.md`](docs/宿主外部实测索引.md).
 8. For the scan-cost trade-off of banning bullets, and what this Skill does not cover downstream (Word / HTML), see [`docs/扫读代价与下游边界.md`](docs/扫读代价与下游边界.md).
 
 ### Examples in other AI apps
 
-Short results from v3.2.0 materials already in-repo. Files on disk do not mean the skill is loaded or enforced, and this does not promise 100% on any host or model.
+Each host below uses the same three fields: **How**, **Result**, **Limit**. Results are external archives (aligned to tip `90b40d16` / v3.2.0 context and filed at v3.3.1). Files on disk do not mean the skill is loaded or enforced, and this does not promise 100% on any host or model. This release does not claim a new round of algorithm or script testing. Pass line means: `--check` exit `0`, report `stripped=0`, and `summary.suppression_blocks == 0`.
 
-**Muse.** Hand `skills/no-markdown-bullets/` into the chat with an explicit convention for a one-off trial; lasting use needs a Muse-local rewrite (`SKILL.md` without frontmatter plus `skill.yaml`) and `--check` from the repo root. A thesis-style trial worked on the prompt path; Muse cannot hard-ban bullets globally.
+**WorkBuddy.** How: install under user skills so the skill can appear in the list; for full-document persistence, copy the default-writing rules into custom instructions and run the pass line before delivery. Result: external archive — pass; may be treated as final. For the landed sample set—about 19k characters of thesis-style text, seven format-boundary cases, a Word bullet sample, and a list-heavy ops manual—the pass line held. Limit: files in a host directory do not force every reply to drop discs.
 
-**WorkBuddy.** Installing under user skills makes the skill listable; persistence needs the default-writing rules copied into custom instructions, plus the script pass line before delivery. For the landed sample set—about 19k characters of thesis-style text, seven format-boundary cases, a Word bullet sample, and a list-heavy ops manual—the pass line held (exit `0`, `stripped=0`, `suppression_blocks=0`).
+**Muse.** How: hand `skills/no-markdown-bullets/` into the chat with an explicit convention for a one-off trial; lasting use needs a Muse-local rewrite (`SKILL.md` without frontmatter plus `skill.yaml`) and the pass line from the repo root. Result: external archive — pass, no blocker; may be treated as final under those conditions; a thesis-style trial worked on the prompt path. Limit: convention plus post-check, not a global hard ban on bullets.
 
-See [`docs/宿主适配-Muse与WorkBuddy.md`](docs/宿主适配-Muse与WorkBuddy.md).
+**Doubao.** How: hand the Skill directory into chat or into user skills; optionally copy the default-writing rules into custom instructions; run the pass line from the repo root before delivery. Result: external archive — usable, no blocker; may be treated as final (low friction, high availability). Limit: whether the skill list shows it does not gate use.
 
-For an index of external host-eval notes on additional hosts (Doubao, ZCode, Qoder, Grok Bot, Cursor, GPT, and others), see [`docs/宿主外部实测索引.md`](docs/宿主外部实测索引.md). It collects archived conclusions for reference; it is **not** a new round of algorithm or script testing in this release.
+**ZCode.** How: hand the Skill directory into chat, or place it per `docs/install.md` (often under `~/.agents/skills/`); run the pass line before delivery. Result: external archive — may be treated as final. Limit: a contrast trial did not prove the Skill removed discs, because the baseline body had no unordered lists; the pass line only shows that turn’s body had no leftover UL.
+
+**Qoder.** How: with no install slot, use “hand to the AI + pass line from the repo root”; Discovery is not a gate. Result: external archive — may be treated as final; the install slot was removed and this repo keeps only the verification summary. Limit: cold-start delay before the skill appears is a host-side behavior.
+
+**Grok Bot.** How: place the Skill where the host can load it, or call it out / attach the directory for that turn; run the pass line on the finished draft. Result: external archive — suited to writing conventions and post-processing, not a global hard switch. Limit: integration is manual; this does not guarantee every reply is disc-free.
+
+**Cursor.** How: copy into project `.cursor/skills/` or user `~/.cursor/skills/` (`.agents/skills/` also works), or hand the directory into chat / copy the default-writing rules; run the pass line from the repo root before delivery. Result: external archive — path-compatible, low install cost; still convention plus post-check. Limit: whether Discovery lists the skill remains unverified, and Discovery is not a usage gate; a path that accepts files does not mean the model obeys every time.
+
+**GPT / ChatGPT.** How: hand the Skill directory or the convention into chat; if the host exposes a Skills entry, you may try installing there; the checker still runs the pass line separately from the repo root. Result: external archive — script and repo CI pass. Limit: independent host-side acceptance is incomplete; do not read this as platform-wide integration success or an unconditional guarantee.
+
+See [`docs/宿主适配-Muse与WorkBuddy.md`](docs/宿主适配-Muse与WorkBuddy.md) for Muse / WorkBuddy detail, and [`docs/宿主外部实测索引.md`](docs/宿主外部实测索引.md) for the eight-host archive summaries.
 
 License: MIT (`LICENSE`).
