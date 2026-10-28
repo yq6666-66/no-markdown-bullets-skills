@@ -82,3 +82,5 @@
 2. 禁止 / 保留 / 例外与「不管」清单，见 [`规则与边界.md`](规则与边界.md)。
 3. 常见安装路径与验证，见 [`install.md`](install.md)。
 4. `docs/install-guide` 分支**不是**安装与验证的 Source of Truth；以 main 与 `CHANGELOG.md` / 标签为准。
+
+剥后语义 / 体裁 / HTML·Word 设计边界见 [`规则与边界.md`](规则与边界.md)；下游 Word 操作见 [`扫读代价与下游边界.md`](扫读代价与下游边界.md)。
