@@ -6,6 +6,10 @@
 
 ## [Unreleased]
 
+### Changed
+
+Docs: README 中、英「其他 AI 应用中的实例」八宿主统一为「接入 / 结论 / 边界」（How / Result / Limit）同骨架；用法第 7 条同步指向实例节与索引；不宣称新一轮宿主实测。
+
 ## 3.3.2
 
 ### Added
