@@ -12,6 +12,8 @@
 
 安装说明以 `.agents/skills/no-markdown-bullets` 为建议放置，`.codex/skills` 仅作兼容与历史路径，是否读取仍以宿主版本为准。
 
+`INTEGRATION.md` 写明 `strip_md_ul.py` 与 `check_docx_numbering.py` 的 `__version__` 独立演进，并说明默认仓库 CI 不是宿主交付门禁（交付不能只看退出码）。`docs/install.md` 在 docx 节补版本独立旁注。
+
 ## 3.3.1
 
 ### Fixed
